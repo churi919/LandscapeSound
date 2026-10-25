@@ -1,0 +1,15 @@
+[server]
+address = "127.0.0.1"
+port = 8501
+maxUploadSize = 20
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+primaryColor = "#27634b"
+backgroundColor = "#f5f4ee"
+secondaryBackgroundColor = "#e8eee6"
+textColor = "#183e31"
+font = "sans serif"
