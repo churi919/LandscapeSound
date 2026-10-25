@@ -104,6 +104,38 @@
         "mechanical_hiss": 0.27431682745615643,
         "abrupt_impacts": 0.016674720371762913,
         "horns_sirens": -0.04074888055523237
+      },
+      "narrations": {
+        "zh-CN": {
+          "file": "narration/monbachtal_riverbank.mp3",
+          "sha256": "a50626e8260c6eee36c0274e64be28b9348b9af1d5101499cdf57967f28ae5e7",
+          "text": "你面前是一片岩石环绕的林间浅溪，中央能看到几级小跌水，水面之间散布着大小石块。左侧岩壁层理明显，部分表面覆着青苔；右侧是露出树根的土坡和小径，回头还能看见斜横的倒木。这只是图片中的景观估计，流水声将作模拟，水边是否便于通行仍不确定。",
+          "text_sha256": "a8df01502c41115abf2714f224c48a12d47c8d20e59ea35d329bf5c019caa9f2",
+          "voice_id": "zh-CN-XiaoxiaoNeural",
+          "duration_seconds": 26.232,
+          "provider": "Microsoft online neural TTS via edge-tts",
+          "neural": true,
+          "human_recording": false
+        },
+        "en": {
+          "file": "narration/monbachtal_riverbank.en.mp3",
+          "sha256": "5f5b8d7a4ff5dc81b48a7b4e7e18cc0f49f7efb212a755696cf0cc74a66ff1a3",
+          "text": "In front of you is a shallow woodland stream surrounded by rocks, with several small cascades in the centre and stones scattered between the pools. Layered rock faces, partly covered in moss, rise to the left. To the right are a dirt slope with exposed roots and a path; looking back reveals a leaning fallen trunk. These are estimates from the image. The flowing-water sound is simulated, and access along the water remains uncertain.",
+          "text_sha256": "b64bf4c177ca019a8ba21c78dcbbf0f938fbed94308c469dbddec5e7a7b928d1",
+          "voice_id": "en-US-JennyNeural",
+          "provider": "Microsoft Edge online neural TTS via edge-tts",
+          "language": "en",
+          "duration_seconds": 28.728,
+          "neural": true,
+          "human_recording": false,
+          "synthesis_config": {
+            "rate": "-3%",
+            "pitch": "+0Hz",
+            "volume": "+0%"
+          },
+          "text_source": "English translation of the corresponding public Chinese guide, stored in EN_SCENES.",
+          "source_text_sha256": "a8df01502c41115abf2714f224c48a12d47c8d20e59ea35d329bf5c019caa9f2"
+        }
       }
     },
     {
@@ -222,6 +254,38 @@
         "mechanical_hiss": 0.3009210228919983,
         "abrupt_impacts": 0.00522604522605737,
         "horns_sirens": -0.03386101623376211
+      },
+      "narrations": {
+        "zh-CN": {
+          "file": "narration/crystal_falls.mp3",
+          "sha256": "f1df6b2b93b845cf2cfae5f0f49eb2369b668957d49530737f00267228f5bc1d",
+          "text": "从画面看，你像是站在树木环绕的岩石浅水边。前方散布着大小石块，右侧是一片沙砾地和巨石；转向左后方，能看见岩壁上的白色瀑布，以及下方相连的浅水。这里的声音仅作模拟，实际水势、距离和响度无法凭照片确定，水边能否安全通行也无法判断。",
+          "text_sha256": "05848449ba280016d592daebb452debc4aa8582d850be0a51d476959dc2c4b77",
+          "voice_id": "zh-CN-XiaoxiaoNeural",
+          "duration_seconds": 25.728,
+          "provider": "Microsoft online neural TTS via edge-tts",
+          "neural": true,
+          "human_recording": false
+        },
+        "en": {
+          "file": "narration/crystal_falls.en.mp3",
+          "sha256": "2951874a9f5b7193001526a19634ba804fd6abcda8b37be0f08bf1ccc99b9b66",
+          "text": "The image suggests a position beside rocky shallow water surrounded by trees. Stones of different sizes lie ahead; to the right are gravel and large boulders. Turning towards the left rear reveals a white waterfall on the rock face and connected shallow water below. The sound is simulated. The photograph cannot establish the actual water force, distance or loudness, or whether the waterside is safe to access.",
+          "text_sha256": "38bb80f492f244c8d50efb38841a0ee944bbbb9e9e62a13ba30a15c591f5551d",
+          "voice_id": "en-US-JennyNeural",
+          "provider": "Microsoft Edge online neural TTS via edge-tts",
+          "language": "en",
+          "duration_seconds": 28.104,
+          "neural": true,
+          "human_recording": false,
+          "synthesis_config": {
+            "rate": "-3%",
+            "pitch": "+0Hz",
+            "volume": "+0%"
+          },
+          "text_source": "English translation of the corresponding public Chinese guide, stored in EN_SCENES.",
+          "source_text_sha256": "05848449ba280016d592daebb452debc4aa8582d850be0a51d476959dc2c4b77"
+        }
       }
     },
     {
@@ -327,6 +391,38 @@
         "mechanical_hiss": 0.2452639937400818,
         "abrupt_impacts": 0.1162018608301878,
         "horns_sirens": -0.03329927350083987
+      },
+      "narrations": {
+        "zh-CN": {
+          "file": "narration/secluded_beach.mp3",
+          "sha256": "d01a9abb39a3d7dd7bc9915723c6011668cce9c0ffd50faaf554ac9731925e53",
+          "text": "你面前是一片被岩石围出的湾状水面，浅色沙滩沿两侧展开，沙上散落着深色条状物。向右看，树枝伸向明亮的天空；转到后方，则是较密的灌木和树木。根据画面估计，这里像是一处小海湾，但水深、浪况和通行条件无法确认，预体验中的浪声也只是模拟。",
+          "text_sha256": "72c177671b493cc8a383ad81b1113e6bff8847112fe78cca50ab65048539d4e1",
+          "voice_id": "zh-CN-XiaoxiaoNeural",
+          "duration_seconds": 26.04,
+          "provider": "Microsoft online neural TTS via edge-tts",
+          "neural": true,
+          "human_recording": false
+        },
+        "en": {
+          "file": "narration/secluded_beach.en.mp3",
+          "sha256": "b1b363a9dd852cd5ec7f71823af5ad7dd84d7d9885a97aca948f425d2ced8738",
+          "text": "In front of you is a bay-like area of water enclosed by rocks, with pale sand extending along both sides and dark strips scattered across it. To the right, branches reach into the bright sky; behind you are denser shrubs and trees. The image suggests a small bay, but water depth, wave conditions and access cannot be confirmed. The waves in this preview are simulated.",
+          "text_sha256": "96675d020005a813903be32ecb7adf8dc8d0f4b88d5ddd48778fc0e9440e7f0a",
+          "voice_id": "en-US-JennyNeural",
+          "provider": "Microsoft Edge online neural TTS via edge-tts",
+          "language": "en",
+          "duration_seconds": 25.296,
+          "neural": true,
+          "human_recording": false,
+          "synthesis_config": {
+            "rate": "-3%",
+            "pitch": "+0Hz",
+            "volume": "+0%"
+          },
+          "text_source": "English translation of the corresponding public Chinese guide, stored in EN_SCENES.",
+          "source_text_sha256": "72c177671b493cc8a383ad81b1113e6bff8847112fe78cca50ab65048539d4e1"
+        }
       }
     },
     {
@@ -431,6 +527,38 @@
         "mechanical_hiss": 0.22881722450256348,
         "abrupt_impacts": 0.015816647093743086,
         "horns_sirens": 0.3321533103783925
+      },
+      "narrations": {
+        "zh-CN": {
+          "file": "narration/urban_street_03.mp3",
+          "sha256": "2944fb0cf671a55f2d8e6e535b1246a958a1cd59f0149d56724af4b92f9d7683",
+          "text": "眼前是一条两侧排列住宅的街道，路边停着多辆汽车，灰白云层铺满天空。朝右看，多层砖楼带着白色窗框，门前围着灌木和矮墙；朝左是砖墙、灰色大门与树冠。转向后方，还能看见道路和一棵宽大的树。图片无法确认车辆是否行驶，试听中的稀疏车声只是模拟。",
+          "text_sha256": "d980959edb2218cde1c00297272c17695232433136f58a612037199cbf0668da",
+          "voice_id": "zh-CN-XiaoxiaoNeural",
+          "duration_seconds": 27.792,
+          "provider": "Microsoft online neural TTS via edge-tts",
+          "neural": true,
+          "human_recording": false
+        },
+        "en": {
+          "file": "narration/urban_street_03.en.mp3",
+          "sha256": "7792bb9ce9646ffce265155441fa7035b53d61f152d3149a4b6bf710c46d00ad",
+          "text": "A residential street stretches ahead, with cars parked along both sides beneath grey-white clouds. To the right, multi-storey brick buildings have white window frames, with shrubs and low walls in front. To the left are a brick wall, grey gates and tree crowns. Looking behind reveals the road and a broad tree. The photograph cannot confirm whether vehicles are moving. The sparse traffic sounds in the preview are simulated.",
+          "text_sha256": "b6a766093c8305fd30fa084ab18f4ff76ad6b1aa49a3fc2b318d3335cd6eb191",
+          "voice_id": "en-US-JennyNeural",
+          "provider": "Microsoft Edge online neural TTS via edge-tts",
+          "language": "en",
+          "duration_seconds": 29.208,
+          "neural": true,
+          "human_recording": false,
+          "synthesis_config": {
+            "rate": "-3%",
+            "pitch": "+0Hz",
+            "volume": "+0%"
+          },
+          "text_source": "English translation of the corresponding public Chinese guide, stored in EN_SCENES.",
+          "source_text_sha256": "d980959edb2218cde1c00297272c17695232433136f58a612037199cbf0668da"
+        }
       }
     }
   ],
