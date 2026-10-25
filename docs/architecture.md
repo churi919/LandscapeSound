@@ -1,63 +1,67 @@
 # Architecture
 
-LandscapeSound 将图像分析、GPT 理解、音效生成、配音与播放分开记录。每一步都有明确输入；任务失败时保留已完成内容，避免用不属于当前图片的结果补位。
+[English](architecture.md) | [简体中文](architecture.zh-CN.md)
 
-## 一张新全景的五个阶段
+[Back to the project guide](../README.md)
+
+LandscapeSound records image analysis, GPT interpretation, sound generation, narration, and playback separately. Each stage has an explicit input. If a task fails, completed work is retained rather than replaced with results belonging to another image.
+
+## Five stages for a new panorama
 
 ```mermaid
 flowchart LR
-    A[上传完整 ERP 全景] --> B[本地四方向转换与视觉分析]
-    B --> C[GPT 理解拼图并返回结构化计划]
-    C --> D[本图声音提示与中文导览]
-    D --> E[独立 CPU 音效生成与处理]
-    E --> F[神经中文配音]
-    F --> G[画面对照与四方向试听]
+    A[Upload a complete ERP panorama] --> B[Local four-view conversion and visual analysis]
+    B --> C[GPT interprets the contact sheet and returns a structured plan]
+    C --> D[Image-specific sound prompts and Mandarin guide]
+    D --> E[Independent CPU sound generation and processing]
+    E --> F[Neural Mandarin narration]
+    F --> G[View comparison and directional listening]
 ```
 
-| 阶段 | 主要文件 | 实际行为 |
+| Stage | Main files | Behavior |
 | --- | --- | --- |
-| 图像准备和分析 | `panorama.py`、`analyze_panorama.py`、`analyzer.py` | 校验完整 2:1 ERP；转成四个水平 90° 透视图；SegFormer B0 与 Depth Anything V2 Small 在本机运行 |
-| GPT 理解 | `gpt_cli_bridge.py` | 通过本机已登录 ChatGPT 的官方 Codex CLI，发送当前全景／四方向拼图与要求；返回严格 JSON |
-| 声景计划与导览 | `gpt_scene_audio.py`、`panorama_pipeline.py` | 分开保存可见事实、动态声音设想和不确定性；保留本图 GPT 提示词，必要时追加声学约束 |
-| 本图音效 | `scene_audio_runtime.py`、`audio_model/generate_scene_audio.py` | 独立环境执行固定 Stable Audio 3 Medium 模型；保存原始 30 秒立体声及 28 秒处理素材 |
-| 中文导览 | `narration.py`、`synthesize_narration.py` | 新文字经独立进程请求 Microsoft 在线神经配音；播放器读取精确文字对应的缓存 MP3 |
+| Image preparation and analysis | `panorama.py`, `analyze_panorama.py`, `analyzer.py` | Validate a complete 2:1 ERP input; produce four horizontal 90° perspective views; run SegFormer B0 and Depth Anything V2 Small locally |
+| GPT interpretation | `gpt_cli_bridge.py` | Use the official Codex CLI with an existing local ChatGPT login to send the current panorama/four-view contact sheet and instructions; receive strict JSON |
+| Soundscape plan and guide | `gpt_scene_audio.py`, `panorama_pipeline.py` | Store visible facts, assumptions about dynamic sounds, and uncertainties separately; preserve the image-specific GPT prompt and append acoustic constraints when needed |
+| Image-specific sound | `scene_audio_runtime.py`, `audio_model/generate_scene_audio.py` | Run a fixed Stable Audio 3 Medium model in an independent environment; retain the original 30-second stereo output and the processed 28-second material |
+| Mandarin guide | `narration.py`, `synthesize_narration.py` | Request Microsoft online neural speech for new text through an independent process; let the player read the cached MP3 matching the exact text |
 
-视觉分析使用独立子进程，结束后释放该进程的 PyTorch／CUDA 占用，再进入后续阶段。音效生成不会将 LiteRT 与其依赖装入主图像环境。
+Visual analysis runs in a separate child process. Once that process exits, its PyTorch/CUDA allocations are released before subsequent stages start. Sound generation does not install LiteRT or its dependencies into the main image-analysis environment.
 
-## 任务和缓存身份
+## Task and cache identity
 
-- 上传原始文件字节的 SHA-256 决定任务目录。不同编码的文件可能是不同任务，即使视觉上相似。
-- 本地工作图像的 RGB 指纹绑定图像分析、GPT 计划与生成音频；实际发送的拼图也保存文件指纹。
-- 声音计划包含模型版本、提示词、种子与空间代理，构成音效缓存身份。原始和处理后音频均核验指纹。
-- 配音按精确文字指纹、音色与合成设置匹配；修改导览后不会默默读取旧文字的 MP3。
-- 读取已完成任务不调用模型。阶段文件缺失、被修改或校验失败时，界面要求恢复有效阶段。
+- The SHA-256 of the original uploaded file bytes determines the task directory. Differently encoded files can be different tasks even when they look similar.
+- The RGB fingerprint of the local working image binds visual analysis, the GPT plan, and generated audio. A file fingerprint is also retained for the contact sheet actually sent to GPT.
+- The sound plan includes the model version, prompts, seeds, and spatial proxies, which establish the sound-cache identity. Both original and processed audio files are checked against their fingerprints.
+- Narration is matched by the exact text fingerprint, voice, and synthesis settings. Editing the guide does not silently load an MP3 of the previous text.
+- Reading a completed task does not invoke a model. If stage files are missing, modified, or fail verification, the interface requests recovery of valid stages.
 
-任务状态保存在本机 `outputs/auto_panorama/`。主界面启动隐藏后台工作进程，并约每两秒读取状态。单个任务不重复启动；音效模型另有全局单任务锁，避免多图同时加载模型。Windows 状态文件采用原子替换与有限共享冲突重试。
+Task state is stored locally under `outputs/auto_panorama/`. The main interface launches a hidden background worker and reads its state approximately every two seconds. It avoids starting the same task twice. Sound generation also has a global single-worker lock to prevent multiple images from loading the model concurrently. Windows state files use atomic replacement with bounded retries for sharing conflicts.
 
-## GPT 入口边界
+## GPT interface boundaries
 
-桥接使用官方客户端的正常登录，不读取或复制认证文件，不自动操控 ChatGPT 网页，也不让模型执行任意项目操作。请求使用隔离目录、只读限制与禁用工具的配置；会话事件若出现不允许的工具调用，结果会被拒绝。客户端诊断与工具事件分开处理，保存有限诊断和协议元数据。
+The bridge uses the official client's normal login. It does not read or copy authentication files, automate the ChatGPT website, or allow the model to perform arbitrary project operations. Requests use an isolated directory, read-only restrictions, and a configuration with tools disabled. Results are rejected if session events include a disallowed tool call. Client diagnostics are distinguished from tool events; only bounded diagnostics and protocol metadata are retained.
 
-当前模型标识为 `gpt-6.1-sol`，需要安装版本及账号支持。失败会保持任务未完成，不使用历史网页回复或本地分类说明冒充本图 GPT 结果。
+The current model identifier is `gpt-6.1-sol`, which must be supported by the installed client and account. A failure leaves the task incomplete. Historical website replies or local category descriptions are not substituted for a GPT result for the current image.
 
-## 音效与空间渲染
+## Sound generation and spatial rendering
 
-固定音效配置为 Medium DiT / SAME-L decoder、w8a8、30 秒、8 步、CFG=1、8 CPU 线程。CFG=1 不启用独立负向提示分支；提示词中的“避免”不能当作生成事件已被排除的保证。
+The fixed sound-generation configuration is Medium DiT / SAME-L decoder, w8a8, 30 seconds, 8 steps, CFG=1, and 8 CPU threads. CFG=1 does not activate a separate negative-prompt branch. An instruction to “avoid” an event is therefore not a guarantee that the generated audio excludes it.
 
-原始立体声保留。处理素材转为单声道循环，包含高通、重采样、循环交叉淡化、共享动态处理与响度／峰值控制。比较页另对同长度素材作全局增益匹配，尽量不让大小声主导判断。
+The original stereo file is retained. Playback material is converted to a mono loop through high-pass filtering, resampling, loop crossfading, shared dynamics processing, and loudness/peak control. The comparison page separately applies global gain matching to equal-length materials to reduce the influence of loudness on judgments.
 
-Web Audio 根据当前视角的方位代理，提供 HRTF 双耳或普通混音对照；距离衰减与低通只表示虚拟远近。同类区域先合并为纹理层，限制重复叠加。场景声音与朗读互停，停止会清除活动音源与配音。
+Web Audio uses the directional proxies for the selected view to provide HRTF binaural rendering or a conventional-mix control. Distance attenuation and low-pass filtering represent virtual near/far relationships only. Regions of the same category are first merged into texture layers to limit repeated stacking. Scene playback and narration stop each other; the stop action clears active sound sources and narration.
 
-同一全景各方向可以复用**本图**音轨，而不同图片不套用上一张图的生成结果。未配置声源的方向保持安静，这不等同于真实全景声传播或遮挡模型。当前没有天顶／脚下分析、头部追踪或经过标定的完整球面声场。
+Directions within the same panorama may share **that image's** sound track. Different images do not inherit the previous image's generated result. Directions without configured sources remain quiet; this is not a model of real panoramic sound propagation or occlusion. The current implementation has no zenith/nadir analysis, head tracking, or calibrated complete spherical sound field.
 
-## 资源保护
+## Resource protection
 
-固定本地音效配置约 2.0 GiB 的历史进程树峰值用于制定启动预算：2.5 GiB 模型预算、1.25 GiB 系统预留与 0.5 GiB 余量。运行中持续监测，若系统余量过低，只停止本任务生成器；它不关闭用户其他程序。这是当前固定模型的本机策略，不能直接推及其他模型。
+The fixed local sound configuration's historical process-tree peak of approximately 2.0 GiB informs its startup budget: a 2.5 GiB model allowance, a 1.25 GiB system reserve, and a 0.5 GiB margin. Monitoring continues during inference. If system headroom becomes too low, only the task's own generator is stopped; other user applications are not closed. This is a local policy for the current fixed model and should not be generalized to other models.
 
-## 数据与验证边界
+## Data and validation boundaries
 
-图像分割与相对深度结果保留在原始视觉报告中，GPT 的可见景物判断另行记录，不覆盖模型结果。深度图按各视角独立归一化，不是米制距离，也不能跨视角比较数值。
+Segmentation and relative-depth outputs remain in the original visual report. GPT's judgments about visible scene content are recorded separately and do not overwrite the model outputs. Depth maps are normalized independently for each view: they are not metric distances, and their values cannot be compared directly across views.
 
-工程测试检查解析、缓存匹配、失败恢复、范围限制、音频处理与播放控制。CLAP 检查音频表征与预定文字标签的接近度，不测量自然度、真实事件概率或人的听辨能力。本轮浅溪仍出现高于溪流标签的雨声接近度，瀑布的水势尺度也表达不足；自动流程跑通不能解释为声景质量问题已解决。
+Engineering tests cover parsing, cache identity, failure recovery, scope restrictions, audio processing, and playback control. CLAP measures the proximity of audio representations to predefined text labels. It does not measure naturalness, real-event probabilities, or human listening performance. In this round, the shallow-stream sample remained closer to the rain label than to the stream label, while the waterfall's flow scale was also underrepresented. A successful automatic pipeline does not establish that the sound-quality problems have been resolved.
 
-模型权重、运行环境、原始本机任务、个人照片与登录资料不进入公开代码仓库。公开演示包仅展示挑明来源的摄影副本、模拟声景、神经配音和去除本机路径的元数据。
+Model weights, runtime environments, original local tasks, personal photographs, and login material are excluded from the public repository. The public demonstration package contains only attributed photographic copies, simulated soundscapes, neural narration, and metadata with local machine paths removed.
