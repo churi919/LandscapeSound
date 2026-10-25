@@ -100,13 +100,17 @@ def _generated_items(assets_dir,metadata):
     return result
 
 
-def _narration_payload(description):
+def _narration_payload(description,language=None):
     """Embed only checksum-verified neural speech for this exact UTF-8 text."""
     digest=hashlib.sha256(description.encode('utf-8')).hexdigest()
-    result={'text_sha256':digest,'default_voice':None,'voices':[],'available':False}
+    language=normalize_language(language or original_text_language(description))
+    matches=original_text_language(description)==language
+    result={'text_sha256':digest,'default_voice':None,'voices':[],'available':False,
+            'language':language,'language_matches_text':matches}
+    if not matches:return result
     try:
         from narration import get_narration_assets
-        cached=get_narration_assets(description,root=ROOT)
+        cached=get_narration_assets(description,root=ROOT,language=language)
     except (ImportError,OSError,ValueError,TypeError):
         return result
     if not isinstance(cached,dict) or cached.get('text_sha256')!=digest:
@@ -117,6 +121,8 @@ def _narration_payload(description):
         voice_id=entry.get('voice_id')
         if not isinstance(voice_id,str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,128}',voice_id):
             continue
+        voice_language='en' if voice_id.startswith('en-') else 'zh-CN' if voice_id.startswith('zh-') else None
+        if voice_language!=language or entry.get('language',voice_language)!=language:continue
         if entry.get('mime_type') not in {'audio/mpeg','audio/wav','audio/ogg'}:
             continue
         try:
@@ -129,7 +135,7 @@ def _narration_payload(description):
         if not raw or hashlib.sha256(raw).hexdigest()!=entry.get('sha256'):
             continue
         record={key:entry[key] for key in ['voice_id','label','provider','mime_type','sha256','duration_seconds','neural'] if key in entry}
-        record.update(audio_base64=encoded,field_recording=False)
+        record.update(audio_base64=encoded,field_recording=False,language=language)
         result['voices'].append(record)
     ids={item['voice_id'] for item in result['voices']}
     if ids:
@@ -223,7 +229,7 @@ def render_audio(sources,description,assets_dir,duration=20,language=None):
              'category_levels':category_levels,
              'default_preset':default_preset,
              'comparison_fixed_offsets':generated_metadata.get('comparison_fixed_offsets') is True,
-             'narration':_narration_payload(str(description)),'version':2}
+             'narration':_narration_payload(str(description),language=language),'version':2}
     template=(ROOT/'audio_player_template.html').read_text(encoding='utf-8')
     if language=='en':
         # Translate only the static template before inserting any user text,
@@ -235,5 +241,7 @@ def render_audio(sources,description,assets_dir,duration=20,language=None):
                      ' <input id="'+category+'-level" type="range" min="0" max="1" step="0.05" value="'+str(category_levels[category])+'"></label>'
                      for category in sorted(categories))
     substitutions={'__PAYLOAD__':safe_json(payload),'__SCRIPT__':script,'__DESCRIPTION__':html.escape(str(description)),
-                   '__PRESET_OPTIONS__':options,'__CATEGORY_CONTROLS__':controls}
-    return re.sub(r'__PAYLOAD__|__SCRIPT__|__DESCRIPTION__|__PRESET_OPTIONS__|__CATEGORY_CONTROLS__',lambda match:substitutions[match.group(0)],template)
+                   '__PRESET_OPTIONS__':options,'__CATEGORY_CONTROLS__':controls,
+                   '__NARRATION_DISABLED__':'' if payload['narration']['language_matches_text'] else 'disabled',
+                   '__NARRATION_MESSAGE__':'' if payload['narration']['language_matches_text'] else translated('中文导览仍在准备中，暂不可朗读。','English guide still preparing. Reading is unavailable until the English guide is ready.')}
+    return re.sub(r'__PAYLOAD__|__SCRIPT__|__DESCRIPTION__|__PRESET_OPTIONS__|__CATEGORY_CONTROLS__|__NARRATION_DISABLED__|__NARRATION_MESSAGE__',lambda match:substitutions[match.group(0)],template)

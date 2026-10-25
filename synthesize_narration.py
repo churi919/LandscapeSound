@@ -1,4 +1,4 @@
-"""Explicit online synthesis worker for verified Mandarin neural narration."""
+"""Explicit online synthesis worker for language-matched neural narration."""
 from __future__ import annotations
 
 import argparse
@@ -13,17 +13,24 @@ import time
 import uuid
 
 from narration import (ROOT,NARRATION_VERSION,PROVIDER,VOICES,SYNTHESIS_CONFIG,
-                       text_sha256,get_narration_assets)
+                       text_sha256,get_narration_assets,language_for_text,
+                       normalize_narration_language,default_voice_for_language)
 
 
-async def synthesize(text,voice,root):
-    import edge_tts
-    from mutagen.mp3 import MP3
+async def synthesize(text,voice,root,language=None):
+    language=normalize_narration_language(language or language_for_text(text))
+    if voice not in VOICES or VOICES[voice]['language']!=language or language_for_text(text)!=language:
+        raise ValueError('Narration voice, text and requested language must match')
+    root=Path(root).resolve()
     digest=text_sha256(text);folder=root/'assets'/'narration'/digest
     folder.mkdir(parents=True,exist_ok=True)
-    cached=get_narration_assets(text,root)
+    cached=get_narration_assets(text,root,language=language)
     existing=next((x for x in cached['voices'] if x['voice_id']==voice),None)
     if existing:return {'voice_id':voice,'file':existing['file'],'reused':True}
+    if any((folder/(voice+suffix)).exists() for suffix in ['.mp3','.json']):
+        raise RuntimeError('Existing narration files will not be overwritten')
+    import edge_tts
+    from mutagen.mp3 import MP3
     lock=folder/(voice+'.lock')
     try:fd=os.open(lock,os.O_CREAT|os.O_EXCL|os.O_WRONLY)
     except FileExistsError as exc:raise RuntimeError('This exact narration voice is already being generated') from exc
@@ -37,9 +44,11 @@ async def synthesize(text,voice,root):
         info=MP3(temporary).info
         if temporary.stat().st_size<1024 or not .5<info.length<3600:
             raise ValueError('Invalid or silent-length synthesized MP3')
+        if final.exists() or (folder/(voice+'.json')).exists():
+            raise RuntimeError('Existing narration files will not be overwritten')
         temporary.replace(final)
         metadata={'version':NARRATION_VERSION,'voice_id':voice,'label':VOICES[voice]['label'],
-            'gender':VOICES[voice]['gender'],'provider':PROVIDER,'neural':True,'field_recording':False,
+            'gender':VOICES[voice]['gender'],'language':language,'provider':PROVIDER,'neural':True,'field_recording':False,
             'not_human_recording':True,'text':text,'text_sha256':digest,'file':str(final.resolve()),
             'sha256':hashlib.sha256(final.read_bytes()).hexdigest(),'mime_type':'audio/mpeg',
             'duration_seconds':float(info.length),'sample_rate':info.sample_rate,'channels':info.channels,
@@ -68,11 +77,13 @@ async def synthesize(text,voice,root):
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--text-file',required=True,type=Path)
-    parser.add_argument('--voice',choices=list(VOICES),action='append',help='May be repeated; default is Xiaoxiao neural.')
+    parser.add_argument('--voice',choices=list(VOICES),action='append',help='May be repeated; default is the female neural voice for the text language.')
+    parser.add_argument('--language',choices=['zh-CN','en'],help='Must match the text and all requested voices.')
     parser.add_argument('--root',type=Path,default=ROOT)
     args=parser.parse_args()
     text=args.text_file.read_text(encoding='utf-8')
-    results=[asyncio.run(synthesize(text,voice,args.root.resolve())) for voice in (args.voice or ['zh-CN-XiaoxiaoNeural'])]
+    language=args.language or language_for_text(text)
+    results=[asyncio.run(synthesize(text,voice,args.root.resolve(),language=language)) for voice in (args.voice or [default_voice_for_language(language)])]
     print(json.dumps(results[0] if len(results)==1 else {'voices':results},ensure_ascii=False))
 
 

@@ -100,7 +100,7 @@ def render_site_view(root):
         st.title(t('对比不同风景的声音', 'Compare the sounds of different landscapes') if view == 'compare'
                  else t('先听一幅已完成的风景', 'Listen to a completed landscape'))
         st.caption(t('画面、声景与中文导览来自同一组已完成示例。可逐个试听，按自己的节奏比较。',
-                     'Explore the pictures, soundscapes and original Chinese guides from four saved examples, one at a time.'))
+                     'Explore the pictures, soundscapes and English guides from four saved examples, one at a time.'))
         render_public_demo(root)
         return True
     if view in DOCUMENT_VIEWS:

@@ -40,38 +40,77 @@ def build_public_demo_html(root, language=None, view='demo'):
     if metadata.get('schema_version') != 1 or not isinstance(scenes, list) or not 1 <= len(scenes) <= 8:
         raise ValueError('Public demo metadata is invalid.')
     embedded = {}; seen = set(); total = 0
+    narration_paths = {'zh-CN': set(), 'en': set()}
+
+    def verify_media(item, identifier, field, locale=None):
+        nonlocal total
+        subdir, suffixes = MEDIA[field]
+        if not isinstance(item, dict):
+            raise ValueError('Public demo media entry is missing.')
+        relative = item.get('file', '')
+        if not isinstance(relative, str) or '\\' in relative or ':' in relative:
+            raise ValueError('Only whitelisted relative demo media paths are allowed.')
+        posix = PurePosixPath(relative)
+        expected_stem = identifier + ('.en' if locale == 'en' else '')
+        if (len(posix.parts) != 2 or posix.parts[0] != subdir
+                or posix.suffix.lower() not in suffixes
+                or posix.stem != expected_stem or '..' in posix.parts):
+            raise ValueError('Public demo media path is outside its locale/scene whitelist.')
+        if field == 'narration':
+            if locale == 'en' and (item.get('language') != 'en' or item.get('voice_id') != 'en-US-JennyNeural'):
+                raise ValueError('English narration must declare its English language and voice.')
+            if locale == 'zh-CN' and item.get('language', 'zh-CN') != 'zh-CN':
+                raise ValueError('Chinese narration has a mismatched locale.')
+            if locale == 'en' or 'text_sha256' in item:
+                text = item.get('text')
+                if not isinstance(text, str) or hashlib.sha256(text.encode('utf-8')).hexdigest() != item.get('text_sha256'):
+                    raise ValueError('Public narration text checksum mismatch.')
+                if locale == 'en' and re.search(r'[\u3400-\u9fff]', text):
+                    raise ValueError('English narration text must be English.')
+            narration_paths[locale or 'zh-CN'].add(relative)
+        path = (folder / relative).resolve()
+        if not path.is_relative_to(folder) or path.parent != (folder / subdir).resolve():
+            raise ValueError('Public demo media must stay inside demo_public.')
+        if not path.is_file() or path.stat().st_size > 8 * 1024**2:
+            raise ValueError('Public demo media is missing or too large.')
+        data = path.read_bytes()
+        if relative not in embedded:
+            total += len(data)
+        if total > 25 * 1024**2 or hashlib.sha256(data).hexdigest() != item.get('sha256'):
+            raise ValueError('Public demo media checksum or size check failed.')
+        embedded[relative] = 'data:' + suffixes[posix.suffix.lower()] + ';base64,' + base64.b64encode(data).decode('ascii')
+
     for scene in scenes:
         identifier = scene.get('id', '')
         if not isinstance(identifier, str) or not re.fullmatch(r'[a-z0-9_-]{1,80}', identifier) or identifier in seen:
             raise ValueError('Public demo scene identifiers must be unique and bounded.')
         seen.add(identifier)
-        for field, (subdir, suffixes) in MEDIA.items():
-            item = scene.get(field)
-            if not isinstance(item, dict):
-                raise ValueError('Public demo media entry is missing.')
-            relative = item.get('file', '')
-            if not isinstance(relative, str) or '\\' in relative or ':' in relative:
-                raise ValueError('Only whitelisted relative demo media paths are allowed.')
-            posix = PurePosixPath(relative)
-            if (len(posix.parts) != 2 or posix.parts[0] != subdir
-                    or posix.suffix.lower() not in suffixes
-                    or posix.stem != identifier or '..' in posix.parts):
-                raise ValueError('Public demo media path is outside its whitelist.')
-            path = (folder / relative).resolve()
-            if not path.is_relative_to(folder) or path.parent != (folder / subdir).resolve():
-                raise ValueError('Public demo media must stay inside demo_public.')
-            if not path.is_file() or path.stat().st_size > 8 * 1024**2:
-                raise ValueError('Public demo media is missing or too large.')
-            data = path.read_bytes(); total += len(data)
-            if total > 25 * 1024**2 or hashlib.sha256(data).hexdigest() != item.get('sha256'):
-                raise ValueError('Public demo media checksum or size check failed.')
-            embedded[relative] = 'data:' + suffixes[posix.suffix.lower()] + ';base64,' + base64.b64encode(data).decode('ascii')
+        for field in MEDIA:
+            verify_media(scene.get(field), identifier, field)
+        narrations = scene.get('narrations', {})
+        if not isinstance(narrations, dict) or set(narrations) - {'zh-CN', 'en'}:
+            raise ValueError('Public narration locale is unsupported.')
+        for locale, item in narrations.items():
+            verify_media(item, identifier, 'narration', locale)
+            if locale == 'zh-CN' and (item.get('file') != scene['narration']['file']
+                                     or item.get('sha256') != scene['narration']['sha256']):
+                raise ValueError('Chinese narration alias does not match the original.')
     index = (folder / 'index.html').resolve()
     if not index.is_relative_to(folder):
         raise ValueError('Public demo page must remain inside demo_public.')
     if index.stat().st_size > 512 * 1024:
         raise ValueError('Public demo page is too large.')
     document = index.read_text(encoding='utf-8')
+
+    # Each inert language template may reference only its own narration files.
+    # Legacy schema-1 pages remain playable in Chinese, never as English audio.
+    templates = re.findall(r'<template id="demo-(zh-CN|en)">(.*?)</template>', document, re.S)
+    if not templates and language == 'en':
+        raise ValueError('English narration unavailable in this legacy demo page; no Chinese audio is substituted.')
+    for locale, content in templates:
+        for source in re.findall(r'\bsrc\s*=\s*[\"\']([^\"\']+)[\"\']', content, re.I):
+            if source.startswith('narration/') and source not in narration_paths[locale]:
+                raise ValueError('Narration source does not match the page language.')
 
     def media_source(match):
         source = match.group(2)
@@ -113,8 +152,11 @@ def render_public_demo(root, language=None):
     try:
         document = build_public_demo_html(root, language, view=st.query_params.get('view', 'demo'))
     except (OSError, ValueError, TypeError, KeyError) as exc:
-        st.warning(tr('公开试听包暂未通过完整校验。你仍可上传自己的全景图。',
-            'The public demo package could not be verified. You can still upload your own panorama.'))
+        if language == 'en' and 'English narration unavailable' in str(exc):
+            st.warning('English narration is unavailable in this older demo package. No Chinese audio is substituted.')
+        else:
+            st.warning(tr('公开试听包暂未通过完整校验。你仍可上传自己的全景图。',
+                'The public demo package could not be verified. You can still upload your own panorama.'))
         with st.expander(tr('查看示例信息', 'View demo details')):
             st.code(str(exc), language=None)
         return False

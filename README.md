@@ -2,13 +2,13 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-**Turn a panorama into an image-guided spatial soundscape and Chinese narration.**
+**Turn a panorama into an image-guided spatial soundscape and a spoken guide in English or Chinese.**
 
-LandscapeSound is a Windows-first research prototype for image-guided soundscape previews: panorama interpretation, local audio generation, spatial playback, and neural Chinese narration.
+LandscapeSound is a Windows-first research prototype for image-guided soundscape previews: panorama interpretation, local audio generation, spatial playback, and neural narration in English or Chinese.
 
-Upload a complete 360° panorama to automatically run GPT image interpretation, generate audio for that image, and synthesize a Chinese guide. Switch between four viewing directions while comparing the picture with the sound, and stop playback or narration at any time. The sound is a simulation designed from the image, **not a field recording of the photographed location**.
+Upload a complete 360° panorama to automatically run GPT image interpretation, generate audio for that image, and prepare narration in the selected interface language. Switch between four viewing directions while comparing the picture with the sound, and stop playback or narration at any time. The sound is a simulation designed from the image, **not a field recording of the photographed location**.
 
-The application interface, saved-example pages and documentation support **English and Simplified Chinese**. Generated narration currently remains in **Chinese**. Switching the interface language does not regenerate or translate the audio.
+The interface, saved examples, documentation and spoken guides support **English and Simplified Chinese**. English uses Jenny's English neural voice by default; Chinese uses Xiaoxiao's Chinese neural voice. If a translated guide or matching voice is missing, the application prepares it once and caches it separately. Changing language does not regenerate the environmental soundscape, and a missing English guide never falls back to Chinese speech.
 
 [Listen to the demo](#listen-to-the-existing-demo) · [Install and run](#install-and-run-the-application) · [Architecture](docs/architecture.md) · [Third-party notices](THIRD_PARTY_NOTICES.md) · [Audio runtime](audio_model/README.md)
 
@@ -18,7 +18,7 @@ Photography: [Crystal Falls](https://polyhaven.com/a/crystal_falls) · Greg Zaal
 
 ## Listen to the existing demo
 
-The [demo_public](demo_public/index.html) directory contains a lightweight presentation of four public photographic panoramas, generated soundscapes, and neural female narration. The entire listening package is approximately 2.1 MB. Images are thumbnails of complete equirectangular panoramas (ERP), soundscapes are lossy OGG Vorbis listening copies, and narration retains the original MP3 files. Listening to these saved results does not require model downloads or a GPT login. You can open its `index.html` directly in a browser.
+The [demo_public](demo_public/index.html) directory contains a lightweight presentation of four public photographic panoramas, generated soundscapes, and separate English and Chinese neural narration. The entire listening package is approximately 2.8 MB. Images are thumbnails of complete equirectangular panoramas (ERP), soundscapes are lossy OGG Vorbis listening copies, and narration uses MP3 files. The original Chinese files are preserved; English files use the `.en.mp3` suffix. Listening to these saved results does not require model downloads or a GPT login. You can open its `index.html` directly in a browser.
 
 GitHub's source view does not execute HTML. After downloading or cloning the repository, optionally serve the project directory locally:
 
@@ -45,7 +45,7 @@ The photographs are CC0 assets from Poly Haven. Their authors and processing det
 - Run semantic segmentation and relative-depth estimation locally, and inspect the original image and analysis layers.
 - Interpret the current image through the official Codex client signed in with ChatGPT, recording visible facts, sound-simulation assumptions, and uncertainty separately.
 - Generate the necessary independent tracks locally with Stable Audio 3 Medium. Supported classes include streams, surf, road ambience, wind, foliage, and gentle water ripples.
-- Synthesize a Chinese neural guide for the image. Starting narration stops the soundscape, starting the soundscape stops narration, and the stop button stops both.
+- Prepare an English or Chinese neural guide for the image. Starting narration stops the soundscape, starting the soundscape stops narration, and the stop button stops both.
 - Verify and resume local tasks, retaining completed stages after a failure. A completed result for the same original file can be loaded from cache.
 - Export the image-specific plan, audio provenance, guide text, and directional settings. Ordinary-photo mode also retains local analysis and correction controls.
 
@@ -62,6 +62,7 @@ The four directions of one panorama share that panorama's tracks, with sounds po
 | Different water scenes | The two new flowing-water tracks had audio-representation similarity of 0.861, with insufficient separation; beach and flowing-water representations were also relatively close |
 | Street | Similarity to the three water scenes was approximately 0.200–0.263, showing clearer separation |
 | Chinese narration | Four Xiaoxiao guides were approximately 25.7–27.8 seconds long. Text, audio fingerprints, and playback checks passed; no naturalness score was assigned |
+| English narration | Four independently synthesized Jenny guides last 25.296–29.208 seconds. Voice locale, English text, audio fingerprints and decoding were checked; no human naturalness score was assigned |
 
 These CLAP values are exploratory comparisons of content representations, **not human recognition rates, naturalness ratings, or event probabilities**. Scores refer to uncompressed comparison WAV files with a common 28-second duration and approximately −23 LUFS. The public OGG files are lossy listening copies and were not re-scored. New and historical images differ, so differences between rounds cannot be attributed solely to prompt improvements.
 
@@ -124,7 +125,7 @@ Double-click `start_windows.bat`, or run:
 
 Open <http://127.0.0.1:8501/?lang=en>. Panorama upload is selected by default. Confirm that the image covers a complete 360° × 180° panorama to start the five-stage workflow automatically. An ordinary wide photograph is not a spherical panorama merely because it has a 2:1 aspect ratio.
 
-Use the sidebar's **中文 / English** control to switch language. Saved examples, scene comparisons and the in-app guides keep the chosen language when you follow their links. You can also open the [Chinese interface](http://127.0.0.1:8501/?lang=zh-CN) directly. The saved-example and comparison pages run inside the main application without a second static server. Existing Chinese guide text is identified as original content in the English interface.
+Use the sidebar's **中文 / English** control to switch language. Saved examples, scene comparisons and the in-app guides keep the chosen language when you follow their links. You can also open the [Chinese interface](http://127.0.0.1:8501/?lang=zh-CN) directly. The saved-example and comparison pages run inside the main application without a second static server. New translations retain the original guide and uncertainty. Their cache identity includes the exact source text and target language; speech caches also verify the target text, voice and language. Preparation failures remain visible and require an explicit retry rather than playing another language.
 
 After refreshing, use **“继续查看最近的全景任务”** (“Continue recent panorama tasks”) to recover local results. If a task fails, select **“继续自动生成”** (“Continue automatic generation”) to complete missing stages. To exit, press Ctrl+C in the launch terminal, or use `stop_windows.ps1` to stop this project's service.
 
@@ -134,10 +135,11 @@ After refreshing, use **“继续查看最近的全景任务”** (“Continue r
 | --- | --- | --- |
 | Initial environment/model preparation | Python dependencies and model-weight downloads | Image and audio inference run locally |
 | GPT interpretation of a new image | The current panorama/four-view contact sheet and task text are sent to the GPT service | A complete task for the same original file can be loaded locally |
+| A missing guide translation | The existing guide text is sent through the signed-in GPT client; the image and environmental sound are not regenerated | Exact-source translations are cached separately by language |
 | Neural narration of new text | Guide text is sent to Microsoft's online speech service through `edge-tts` | An MP3 matching the exact text can be played offline |
 | Browser soundscape playback | Locally generated audio is rendered with Web Audio | Playback itself does not require regeneration |
 
-Xiaoxiao is a neural synthetic voice, not a human recording. `edge-tts` is a third-party client; service availability and applicable conditions are determined by the service provider.
+Jenny, Guy, Xiaoxiao and Yunxi are neural synthetic voices, not human recordings. `edge-tts` is a third-party client; service availability and applicable conditions are determined by the service provider.
 
 ## Project structure
 
@@ -153,6 +155,7 @@ scene_audio_runtime.py           Separate audio process and postprocessing
 audio_model/                    Audio scripts, pinned versions, and notices
 narration.py / synthesize_narration.py
                                 Exact-text narration cache and synthesis
+narration_localization.py        Source-bound guide translation cache
 audio_player* / browser_audio.py Browser spatial playback and controls
 tests/                          Engineering tests
 demo_public/                    Lightweight publishable results and sources
@@ -168,7 +171,7 @@ python -m pip install -r requirements-test.txt
 python -m pytest tests -q
 ```
 
-In a clean source copy without models, historical outputs, original photographs, or the local runtime environments, the project tests produced **160 passed**. The tests do not require a GPT login or online narration. Node.js enables 3 browser-script checks; those 3 checks are explicitly skipped when Node is absent. `pytest.ini` separates project tests from tests in downloaded third-party code. Engineering checks cover cache identity, parsing, recovery, audio processing, and control logic; they do not establish segmentation accuracy, soundscape naturalness, or target-user outcomes.
+In a clean source copy without models, historical outputs, original photographs, or the local runtime environments, the project tests produced **189 passed**. The tests do not require a GPT login or online narration. Node.js enables 3 browser-script checks; those 3 checks are explicitly skipped when Node is absent. `pytest.ini` separates project tests from tests in downloaded third-party code. Engineering checks cover cache identity, parsing, recovery, audio processing, and control logic; they do not establish segmentation accuracy, soundscape naturalness, or target-user outcomes.
 
 ## Sources and licensing
 

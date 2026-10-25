@@ -143,8 +143,8 @@ def render_intro(root: Path):
         '<div class="ls-brand">'+t('LANDSCAPESOUND · 景观听见','LANDSCAPESOUND')+'</div>'
         '<h1>'+t('让风景，<span>慢慢被听见。</span>', 'Let the landscape<br><span>be heard.</span>')+'</h1>'
         '<p>'+t('上传一张全景，用属于这幅画面的声音和自然讲述，感受眼前的方向、层次与细节。',
-                 'Bring a panorama. Explore its directions, layers and details through image-specific sounds and a natural Chinese guide.')+'</p>'
-        '<div class="ls-hero-meta"><span>'+t('GPT 画面理解','GPT image understanding')+'</span><span>'+t('本图专属声景','Image-specific soundscapes')+'</span><span>'+t('自然中文导览','Natural Chinese narration')+'</span></div>'
+                 'Bring a panorama. Explore its directions, layers and details through image-specific sounds and a natural English guide.')+'</p>'
+        '<div class="ls-hero-meta"><span>'+t('GPT 画面理解','GPT image understanding')+'</span><span>'+t('本图专属声景','Image-specific soundscapes')+'</span><span>'+t('自然中文导览','Natural English narration')+'</span></div>'
         f'<svg class="ls-wave" viewBox="0 0 203 90" fill="#b9f0df" aria-hidden="true">{bars}</svg></section>',
         unsafe_allow_html=True)
     with st.container(key="hero_actions"):
@@ -157,7 +157,7 @@ def render_intro(root: Path):
     steps = [
         ('01', t('带来一幅风景','Bring a landscape'), t('上传完整全景，或选择已完成示例。','Upload a complete panorama or choose a saved example.')),
         ('02', t('等待本图理解与生成','Let the scene take shape'), t('进度随时可见，已完成的步骤会保留。','Follow the progress. Completed steps are saved.')),
-        ('03', t('按自己的节奏听','Listen at your own pace'), t('切换方向，朗读导览，也可以随时停止。','Change direction, play the Chinese guide, or stop at any time.')),
+        ('03', t('按自己的节奏听','Listen at your own pace'), t('切换方向，朗读导览，也可以随时停止。','Change direction, play the English guide, or stop at any time.')),
     ]
     st.markdown('<section class="ls-path" aria-label="'+t('三步开始体验','Three steps to begin')+'">'+
         ''.join('<article><b>'+number+'</b><div><strong>'+html.escape(title)+'</strong><small>'+html.escape(description)+'</small></div></article>' for number,title,description in steps)+'</section>',

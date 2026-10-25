@@ -148,9 +148,10 @@ def _command(executable, image, schema, response):
     for feature in DISABLED_FEATURES:
         command.extend(["--disable", feature])
     command.extend(["exec", "--ignore-user-config", "--ephemeral", "--skip-git-repo-check",
-                    "--sandbox", "read-only", "--model", DEFAULT_MODEL, "--json",
-                    "--image", str(image), "--output-schema", str(schema),
-                    "--output-last-message", str(response)])
+                    "--sandbox", "read-only", "--model", DEFAULT_MODEL, "--json"])
+    if image is not None:
+        command.extend(["--image", str(image)])
+    command.extend(["--output-schema", str(schema), "--output-last-message", str(response)])
     for value in [
         'web_search="disabled"', "mcp_servers={}", "project_doc_max_bytes=0",
         "skills.include_instructions=false", "features.skip_host_skill_discovery=true",

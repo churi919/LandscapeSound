@@ -57,14 +57,14 @@ main > .mix, main > details, #play, #calibrate, #export,
     intro=('<section id="narration-only-intro" aria-label="'+t('仅导览','Narration only')+'">'
            '<h2>'+t('全景导览','Panorama guide')+'</h2><p>'+
            t('此方向没有配置声源，声景保持无声。可以朗读本图的全景导览。',
-             'No sound source is configured for this direction. The soundscape stays silent; you can play the original Mandarin guide.')+'</p>'
+             'No sound source is configured for this direction. The soundscape stays silent; you can play the English panorama guide when its narration is ready.')+'</p>'
            '<p>'+html.escape(description)+'</p></section>')
     rendered=rendered.replace('<style>',styling+'<style>',1)
     rendered=re.sub(r'(<main\b[^>]*>)',lambda match:match.group(1)+intro,rendered,count=1)
     rendered=re.sub(r'(<button\b[^>]*\bid="stop"[^>]*>).*?(</button>)',
         lambda match:match.group(1)+t('停止朗读','Stop narration')+match.group(2),rendered,count=1,flags=re.S)
     rendered=re.sub(r'(<div\b[^>]*\bid="status"[^>]*>).*?(</div>)',
-        lambda match:match.group(1)+t('此方向无声景，可点击朗读全景导览。','No soundscape in this direction. Play the original Mandarin panorama guide if you wish.')+match.group(2),rendered,count=1,flags=re.S)
+        lambda match:match.group(1)+t('此方向无声景，可点击朗读全景导览。','No soundscape in this direction. Play the English panorama guide if its narration is ready.')+match.group(2),rendered,count=1,flags=re.S)
     return rendered
 
 
@@ -248,8 +248,8 @@ def render_panorama_ui(root: Path, duration: float = 12):
     gpt_provenance = plan.get("evidence", {}).get("gpt_provenance")
     uses_gpt = isinstance(gpt_provenance, dict) and gpt_provenance.get("provider") in {"web_chatgpt", "codex_cli"}
     categories = {item["category"] for item in plan.get("stems", plan.get("items", []))}
-    if get_language() == 'en':
-        st.caption('Stored panorama titles, image facts and guide text retain their original Chinese. The cached narration remains Mandarin; interface language changes do not regenerate it.')
+    st.caption(t('原始全景结果、画面依据与中文基础导览保持不变；当前语言的导览文字与自然配音独立缓存，不重做声景。',
+                 'Original panorama results, image evidence and the Mandarin base guide are retained. Guide text and neural narration for the selected language are cached separately without regenerating the soundscape.'))
     generic_comparison_available = categories.issubset({"trees", "water"})
     labels = {"trees": "叶片", "water": "水面", "surf": "海浪", "stream": "流水", "traffic": "道路背景", "wind": "风声"}
     section(t("02 / 为这幅风景而作", "02 / MADE FOR THIS LANDSCAPE"), tr_ui("这张全景的专属声音"))
@@ -320,9 +320,11 @@ def render_panorama_ui(root: Path, duration: float = 12):
     st.markdown(tr_ui(f"**当前朝向：{selected_view.get('label', view_id)} · {selected_view.get('yaw', 0):g}°**"))
     st.caption(tr_ui(f"当前方向有 {len(playback_sources)} 个模拟声源。切换方向，相当于转身后重新面向画面。"))
     playback_assets = (audio_result or {}).get("assets_dir") if audio_mode == "本图专属生成" else root / "assets"
-    from narration_ui import scene_narration_guide, render_narration_controls
+    from narration_ui import scene_narration_guide, prepare_localized_narration, render_narration_controls
     guide = pipeline_result["narration_guide"] if pipeline_result is not None else scene_narration_guide(report, asset_id, root)
     description = pipeline_result["narration_text"] if pipeline_result is not None else (guide['text'] if guide else ("；".join(plan.get("evidence", {}).get("visible_facts_zh", [])) if uses_gpt else scene.get("description", "")))
+    playback_text, localized_narration = prepare_localized_narration(description, root, asset_id)
+    shown_guide = localized_narration.get('localized_text', '')
     picture_column, listening_column = st.columns([1, 1.18], gap="large")
     with picture_column:
         _show_image(selected_report.get("files", {}).get("input"), "当前透视画面")
@@ -330,7 +332,11 @@ def render_panorama_ui(root: Path, duration: float = 12):
             st.write(tr_ui(scene.get("description", "此视角暂无景观描述。")))
         if guide:
             with st.expander(tr_ui("查看本次朗读导览")):
-                st.write(tr_ui(description))
+                if shown_guide:
+                    st.write(shown_guide)
+                if shown_guide != description:
+                    st.caption(t('原始导览文字', 'Original guide text'))
+                    st.write(description)
         with st.expander(tr_ui("查看分析图层与运行信息")):
             _show_image(selected_report.get("files", {}).get("segmentation"), "语义分割叠加")
             _show_image(selected_report.get("files", {}).get("depth"), "当前视角的相对深度")
@@ -341,15 +347,15 @@ def render_panorama_ui(root: Path, duration: float = 12):
     with listening_column:
         if audio_mode == "通用素材对照":
             st.info(tr_ui("当前明确选择通用素材对照；这些声音不是根据本图独立生成的。"))
-        narration_metadata = render_narration_controls(description, root, asset_id+'_'+view_id)
+        narration_metadata = render_narration_controls(playback_text, root, asset_id+'_'+view_id) if playback_text else None
         try:
             from browser_audio import render_audio
             if not playback_sources:
                 st.info(tr_ui("此方向未配置有画面依据的声源，声景保持无声；仍可朗读全景导览。"))
             if playback_assets:
-                rendered = render_audio(playback_sources, description, playback_assets, duration)
+                rendered = render_audio(playback_sources, playback_text, playback_assets, duration)
                 if not playback_sources:
-                    rendered = _narration_only_page(rendered, description)
+                    rendered = _narration_only_page(rendered, playback_text)
                 components.html(rendered, height=760 if playback_sources else 440, scrolling=True)
             else:
                 st.info(tr_ui("专属声音就绪后可在此试听；也可主动选择通用素材对照。" if generic_comparison_available else "本图专属声音生成并校验完成后，可在此试听。"))
@@ -373,7 +379,7 @@ def render_panorama_ui(root: Path, duration: float = 12):
              "report_path", "plan_path", "result_file", "requested_voice_ids", "reused_steps")}
     export_report["scene_audio_plan"] = plan
     export_report["narration"] = {"text":description,"guide_provenance":guide.get("provenance") if guide else None,
-                                  "cache":narration_metadata}
+                                  "playback_text":playback_text,"localization":localized_narration,"cache":narration_metadata}
     export_report["gpt_audio_provenance"] = gpt_provenance if uses_gpt else None
     export_report["scene_audio_materials"] = {
         "selection": audio_mode,

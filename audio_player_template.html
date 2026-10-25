@@ -5,8 +5,8 @@
 <p id="material-status" class="note" aria-live="polite"></p>
 <p id="comparison-policy" class="note"></p>
 <div class="actions"><button id="play" class="primary">播放声景</button><button id="stop" class="stop">停止全部声音</button><button id="calibrate">左右耳校准</button><button id="export">下载试听设置</button></div>
-<div class="toolbar"><label for="narration-voice">朗读配音</label><select id="narration-voice"></select><button id="speak">朗读景观描述</button><label for="narration-volume">朗读音量 <input id="narration-volume" type="range" min="0" max="1" step="0.05" value="0.8"></label></div>
-<p class="note" id="voice-status" aria-live="polite"></p>
+<div class="toolbar"><label for="narration-voice">朗读配音</label><select id="narration-voice" __NARRATION_DISABLED__></select><button id="speak" __NARRATION_DISABLED__>朗读景观描述</button><label for="narration-volume">朗读音量 <input id="narration-volume" type="range" min="0" max="1" step="0.05" value="0.8"></label></div>
+<p class="note" id="voice-status" aria-live="polite">__NARRATION_MESSAGE__</p>
 <div class="mix"><label for="volume">总音量 <input id="volume" type="range" min="0" max="0.6" step="0.01" value="0.25"><output id="volume-value">25%</output></label>__CATEGORY_CONTROLS__</div>
 <div id="status" role="status" aria-live="polite">尚未播放。建议佩戴立体声耳机。</div><p id="plan-summary"></p>
 <details><summary>调整图像区域的方位和远近</summary><p class="note">这里的修改仅用于试听。需要保存图像分析校正时，请使用应用中的校正表单。</p><div id="source-controls" class="source-grid"></div></details>

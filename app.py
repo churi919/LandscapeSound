@@ -236,7 +236,7 @@ if report is None:
     ]
     try:
         from browser_audio import render_audio
-        components.html(render_audio(preview_sources, "这是手动试听预览，左侧为树声，右侧为水声。", ASSETS, duration),
+        components.html(render_audio(preview_sources, tr_ui("这是手动试听预览，左侧为树声，右侧为水声。"), ASSETS, duration),
                         height=760, scrolling=True)
     except (ImportError, FileNotFoundError) as exc:
         st.info(tr_ui("播放器正在准备。照片分析功能就绪后，即可生成可试听的结果。"))
@@ -244,8 +244,8 @@ if report is None:
     st.stop()
 
 scene = report["scene"]
-if get_language() == 'en':
-    st.caption('Stored titles, scene facts and guide text retain their original language. Existing narration is Mandarin; switching the interface does not generate English speech.')
+st.caption(t('原始报告与画面依据保持原文；导览文字和自然配音会按当前语言准备并缓存。',
+             'Original reports and scene evidence retain their source language. Guide text and neural narration are prepared and cached in the selected language.'))
 metrics = report.get("metrics", {})
 result_key = st.session_state.result_key
 st.divider()
@@ -312,7 +312,6 @@ if mode == "gpt_assisted":
         st.link_button(tr_ui("查看 GPT 原始对话"), source_url)
 if st.session_state.description_edited_by_user:
     st.caption(tr_ui("当前描述包含你的人工修改，导出时会保留来源和修改标记。"))
-st.write(tr_ui(st.session_state.corrected_description))
 st.caption(tr_ui("播放器内的实时滑块只用于当次试听；需要保留并导出的修改，请在下方校正表单中应用。"))
 
 with st.expander(tr_ui("校正声源与景观描述"), expanded=False):
@@ -347,13 +346,20 @@ with st.expander(tr_ui("校正声源与景观描述"), expanded=False):
             st.session_state.user_corrected = True
             st.rerun()
 
-from narration_ui import render_narration_controls
-narration_metadata = render_narration_controls(st.session_state.corrected_description, ROOT, result_key)
+from narration_ui import prepare_localized_narration, render_narration_controls
+playback_text, localized_narration = prepare_localized_narration(st.session_state.corrected_description, ROOT, result_key)
+shown_guide = localized_narration.get('localized_text', '')
+if shown_guide:
+    st.write(shown_guide)
+if shown_guide != st.session_state.corrected_description:
+    with st.expander(t('查看原始导览文字', 'View original guide text')):
+        st.write(st.session_state.corrected_description)
+narration_metadata = render_narration_controls(playback_text, ROOT, result_key) if playback_text else None
 
 try:
     from browser_audio import render_audio
     components.html(render_audio(st.session_state.corrected_sources,
-                                 st.session_state.corrected_description, ASSETS, duration),
+                                 playback_text, ASSETS, duration),
                     height=760, scrolling=True)
 except Exception as exc:
     st.error(tr_ui("播放器尚未完成加载。请检查 assets 目录中的本地音频文件。"))
@@ -362,7 +368,8 @@ except Exception as exc:
 export_report = copy.deepcopy(report)
 export_report["scene"]["sources"] = copy.deepcopy(st.session_state.corrected_sources)
 export_report["scene"]["description"] = st.session_state.corrected_description
-export_report["narration"] = narration_metadata
+export_report["narration"] = {"source_text":st.session_state.corrected_description,
+    "playback_text":playback_text,"localization":localized_narration,"cache":narration_metadata}
 export_report["audio_renderer"] = {"version": 2, "material_presets": ["verified_ai_generated", "recording_textures", "legacy_procedural"],
     "legacy_procedural_preset_available": True, "pictured_site_recording": False,
     "material_manifest": str(ASSETS / "natural" / "manifest.json"),
