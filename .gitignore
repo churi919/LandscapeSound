@@ -1,0 +1,64 @@
+# Local Python environments and reproducible caches
+.venv*/
+venv/
+.cache/
+**/.cache/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Downloaded model weights and upstream runtime checkouts
+/models/
+/audio_model/.venv/
+/audio_model/hf_cache/
+/audio_model/stable-audio-3/
+/audio_model/weights_manifest.json
+/audio_model/.scene_generator.lock
+
+# Local uploads, generated recordings, original photos and experiment logs
+# Curated, sanitized release examples belong in demo_public/ instead.
+/assets/
+/samples/
+/outputs/
+/docs/*.html
+/audio_component_preview.html
+/audio_validation.html
+/event_status.json
+# Machine-specific history and web-conversation capture helpers stay local.
+/README_中文操作指南.md
+/cache_reviewed_captions.py
+/build_demo_narrations.py
+/build_gpt_audio_report.py
+/run_gpt_audio_demo.py
+/build_audio_refinement_report.py
+*.log
+*.tmp
+*.tmp.*
+*.lock
+
+# Credentials and machine-local configuration (config.toml is safe to share)
+.env
+.env.*
+!.env.example
+**/secrets.toml
+**/credentials.json
+**/auth.json
+**/cookies*.json
+**/token.json
+**/tokens.json
+id_rsa
+id_ed25519
+*.pem
+*.key
+
+# Editors and Windows metadata
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
+.DS_Store

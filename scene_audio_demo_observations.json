@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "review_method": "Agent visually inspected the panorama/input and all four perspective input images in each existing overview contact sheet. These facts do not establish actual sound events.",
+  "items": [
+    {
+      "scene_id": "lakes",
+      "image_sha256_rgb": "accd78eb7d2134e2986414f517dd29a726f5b2bae3e664a68298db75d0bba263",
+      "reviewed_image": "outputs/panorama/lakes/overview.jpg",
+      "visual_facts": ["An open inland water surface lies beside a low bank and a hard path.", "Scattered trees and low shrubs have sparse autumn-coloured foliage; they do not form a closed forest canopy."],
+      "visual_facts_zh": ["开阔内陆水面旁有低岸和硬质道路。", "岸边是稀疏树木与低灌丛，不是封闭林冠。"],
+      "profiles": {"trees": "open_bank_foliage", "water": "quiet_inland_lake"},
+      "sound_assumptions_zh": ["低强度疏叶风声和细微拍岸水声是模拟设想，照片不能证明实际风速或水声强度。"],
+      "concerns_zh": ["湖水在不同朝向被分成water/lake/sea，不能把sea误标签当成海浪证据。"]
+    },
+    {
+      "scene_id": "autumn_forest_01",
+      "image_sha256_rgb": "facebf9da19c8ab764a0fe5fd0573f32f5f50642d78bd1bdd62a500a3fd17511",
+      "reviewed_image": "outputs/panorama/autumn_forest_01/overview.jpg",
+      "visual_facts": ["Deciduous tree trunks surround a wooded area with remaining yellow-green and brown leaves overhead.", "The ground is covered with fallen autumn leaves and includes a large rock; no open water is visible."],
+      "visual_facts_zh": ["落叶树干围合林间空间，林冠仍有黄绿与褐色叶片。", "地面覆盖落叶并有大石，未见开阔水面。"],
+      "profiles": {"trees": "autumn_woodland"},
+      "sound_assumptions_zh": ["细碎纸感叶声用于表现轻微风动；不添加脚踩落叶声，因为照片没有行走事件证据。"],
+      "concerns_zh": ["原分割未正确识别大石，不影响本轮仅树叶声计划，但不能声称视觉结构已准确恢复。"]
+    },
+    {
+      "scene_id": "suburban_garden",
+      "image_sha256_rgb": "14f7add461b8ee720a20e049d9e67e168ee1c760d046f8913945f520956e8dc1",
+      "reviewed_image": "outputs/panorama/suburban_garden/overview.jpg",
+      "visual_facts": ["An open domestic lawn is bordered by planted shrubs, clipped hedges, scattered small trees, fences, and houses.", "A small blue swimming pool is visible at the edge of the back perspective, but the current segmentation/source report has no enabled water region."],
+      "visual_facts_zh": ["开阔住宅草坪周围是灌丛、修剪树篱、小树、围墙和房屋。", "后方视角边缘可见蓝色泳池，但当前分割与声源结果漏识别水体。"],
+      "profiles": {"trees": "garden_shrubs"},
+      "sound_assumptions_zh": ["用低强度近灌丛叶片轻擦声作模拟，草坪本身不额外配声。"],
+      "concerns_zh": ["泳池漏识别保持公开记录，本轮不伪造水源或修改视觉报告。", "静态泳池不能证明有泵、喷泉、游泳者或可听流水，不添加这些声效。"]
+    }
+  ]
+}
