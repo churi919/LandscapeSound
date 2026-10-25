@@ -28,6 +28,12 @@ flowchart LR
 
 Visual analysis runs in a separate child process. Once that process exits, its PyTorch/CUDA allocations are released before subsequent stages start. Sound generation does not install LiteRT or its dependencies into the main image-analysis environment.
 
+## Website language and navigation
+
+`ui_i18n.py` resolves `lang=zh-CN` or `lang=en` for each Streamlit session. The interface stores stable widget values independently of their translated labels. `site_pages.py` keeps examples, comparison pages, and documentation in the selected language, including links within documents. These pages use the main application and do not require a separate static server. The standalone saved demo also accepts the same language parameter.
+
+Language selection changes presentation only. It does not change image fingerprints, task directories, sound prompts, generated tracks, or narration-cache identity. Existing Chinese guide text and speech retain their original language and are identified accordingly in the English interface.
+
 ## Task and cache identity
 
 - The SHA-256 of the original uploaded file bytes determines the task directory. Differently encoded files can be different tasks even when they look similar.
