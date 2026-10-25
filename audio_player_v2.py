@@ -8,16 +8,54 @@ import re
 import wave
 from pathlib import Path
 from audio_layers import plan_audio_layers
+from ui_i18n import get_language, normalize_language
 
 ROOT=Path(__file__).resolve().parent
 CATEGORY_LABELS={'trees':'风叶','water':'水声','bird':'鸟鸣（人工）',
                  'surf':'海浪','stream':'流水','traffic':'道路背景','wind':'风声'}
+CATEGORY_LABELS_EN={'trees':'Leaves','water':'Water','bird':'Bird sound (manual example)',
+                    'surf':'Surf','stream':'Stream','traffic':'Road ambience','wind':'Wind'}
 GENERATED_CATEGORIES=frozenset(CATEGORY_LABELS)-{'bird'}
 CATEGORY_LEVELS={'trees':.8,'water':.7,'bird':.5,'surf':.7,'stream':.7,'traffic':.55,'wind':.6}
+
+_TEMPLATE_EN={
+    'lang="zh-CN"':'lang="en"',
+    '景观声音与描述播放器':'Soundscape audio and narration player',
+    '连续声景试听':'Continuous soundscape preview',
+    '同类区域整理成连续纹理，避免同一段声音同步堆叠。可用素材会在下方列出，均用于模拟预体验，并非照片现场录音。':
+        'Regions of the same type form continuous textures, avoiding synchronized copies. Available audio is listed below. It is a simulation, not a recording of the photographed site.',
+    '声音版本':'Audio version','空间方式':'Spatial mode',
+    '深度驱动双耳声景':'Relative-depth binaural soundscape','普通混音对照':'Plain-mix comparison',
+    '播放声景':'Play soundscape','停止全部声音':'Stop all audio',
+    '左右耳校准':'Left/right headphone check','下载试听设置':'Download playback settings',
+    '朗读配音':'Narration voice','朗读景观描述':'Read original guide',
+    '朗读音量':'Narration volume','总音量':'Master volume',
+    '尚未播放。建议佩戴立体声耳机。':'Not playing. Stereo headphones are recommended.',
+    '调整图像区域的方位和远近':'Adjust region direction and virtual distance',
+    '这里的修改仅用于试听。需要保存图像分析校正时，请使用应用中的校正表单。':
+        'These changes affect this preview only. Use the application correction form to save changes to the image analysis.',
+    '景观描述与素材来源':'Original guide and audio sources',
+    '可选版本由当前已备齐的素材决定；有对应自然录音时才提供录音选项。各条件采用相同的连续混音、方位和距离规则，具体对照条件以评估页为准。当前试听尚不能代替主观听感实验；人工鸟鸣选项若存在，仍为程序示例。':
+        'Available versions depend on verified audio files. A recorded-audio option appears only when matching recordings are available. Conditions share mixing, direction and distance rules; consult the evaluation page for the comparison protocol. This preview is not a subjective listening study. Any manual bird option remains a procedural example.',
+    '播放状态与工程自检':'Playback status and engineering checks',
+    '静音检验新版混音':'Run silent mix check',
+}
 
 
 def safe_json(value):
     return json.dumps(value,ensure_ascii=False,allow_nan=False).replace('<','\\u003c').replace('>','\\u003e').replace('&','\\u0026')
+
+
+def original_text_language(text):
+    """Choose a local system-voice family from content, never the UI locale.
+
+    This lightweight hint only distinguishes the application's Chinese guides
+    from its English previews. It does not translate or rewrite the text.
+    """
+    text=str(text)
+    if re.search(r'[\u3400-\u9fff]',text):return 'zh-CN'
+    if re.search(r'[A-Za-z]',text):return 'en'
+    return 'und'
 
 
 def _read_manifest(path):
@@ -101,7 +139,10 @@ def _narration_payload(description):
     return result
 
 
-def render_audio(sources,description,assets_dir,duration=20):
+def render_audio(sources,description,assets_dir,duration=20,language=None):
+    language=normalize_language(language or get_language())
+    translated=lambda chinese,english:english if language=='en' else chinese
+    labels=CATEGORY_LABELS_EN if language=='en' else CATEGORY_LABELS
     assets_dir=Path(assets_dir)
     clean=[]
     for index,source in enumerate(sources):
@@ -155,13 +196,14 @@ def render_audio(sources,description,assets_dir,duration=20):
     required=active-{'bird'}
     generated_available=bool(required) and required.issubset(generated_items) and active.issubset(origins['generated'])
     profiles={
-        'natural':{'label':'自然录音：连续纹理','provenance':metadata,'categories':origins['natural']},
-        'legacy':{'label':'原版：程序点声源','provenance':legacy_metadata,'categories':origins['legacy']}}
+        'natural':{'label':translated('自然录音：连续纹理','Recorded audio: continuous texture'),'provenance':metadata,'categories':origins['natural']},
+        'legacy':{'label':translated('原版：程序点声源','Legacy: procedural point sources'),'provenance':legacy_metadata,'categories':origins['legacy']}}
     if generated_items:
         model_label=generated_metadata.get('model',generated_metadata.get('model_id'))
         if isinstance(model_label,dict):model_label=model_label.get('name',model_label.get('id'))
         model_label=model_label.strip() if isinstance(model_label,str) and model_label.strip() else 'Stable Audio 3'
-        profiles['generated']={'label':'AI生成：'+model_label,'provenance':generated_metadata,
+        if language=='en':model_label=model_label.replace(' · 本全景专属',' · scene-specific')
+        profiles['generated']={'label':translated('AI生成：','AI generated: ')+model_label,'provenance':generated_metadata,
                                'categories':origins['generated']}
     available_presets=(['generated'] if generated_available else [])+[key for key in ['natural','legacy'] if active.issubset(origins[key])]
     if not available_presets and active:
@@ -172,18 +214,24 @@ def render_audio(sources,description,assets_dir,duration=20):
         specified=[s for s in clean if s['category']==category and 'relative_level' in s]
         category_levels[category]=(sum(s['relative_level']*s['area_fraction'] for s in specified)/sum(s['area_fraction'] for s in specified)) if specified else CATEGORY_LEVELS[category]
     options=''.join('<option value="'+key+'"'+(' selected' if key==default_preset else '')+'>'+html.escape(profiles[key]['label'])+'</option>' for key in available_presets)
-    payload={'sources':clean,'layers':plan_audio_layers(clean),'description':str(description),
+    payload={'sources':clean,'layers':plan_audio_layers(clean),'description':str(description),'language':language,
+             'description_language':original_text_language(description),
              'duration':max(3,min(60,float(duration))),'audio':audio,'natural_available':natural_available,
              'provenance':metadata,'profiles':profiles,'generated_available':generated_available,
              'available_presets':available_presets,
-             'category_labels':{category:CATEGORY_LABELS[category] for category in sorted(categories)},
+             'category_labels':{category:labels[category] for category in sorted(categories)},
              'category_levels':category_levels,
              'default_preset':default_preset,
              'comparison_fixed_offsets':generated_metadata.get('comparison_fixed_offsets') is True,
              'narration':_narration_payload(str(description)),'version':2}
     template=(ROOT/'audio_player_template.html').read_text(encoding='utf-8')
+    if language=='en':
+        # Translate only the static template before inserting any user text,
+        # provenance, payload or script. Original descriptions stay verbatim.
+        for chinese,english in sorted(_TEMPLATE_EN.items(),key=lambda pair:len(pair[0]),reverse=True):
+            template=template.replace(chinese,english)
     script=(ROOT/'audio_player.js').read_text(encoding='utf-8')
-    controls=''.join('<label for="'+category+'-level">'+html.escape(CATEGORY_LABELS[category])+
+    controls=''.join('<label for="'+category+'-level">'+html.escape(labels[category])+
                      ' <input id="'+category+'-level" type="range" min="0" max="1" step="0.05" value="'+str(category_levels[category])+'"></label>'
                      for category in sorted(categories))
     substitutions={'__PAYLOAD__':safe_json(payload),'__SCRIPT__':script,'__DESCRIPTION__':html.escape(str(description)),

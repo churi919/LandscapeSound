@@ -51,6 +51,10 @@ iframe{border-radius:18px;border:1px solid #d4e0df}
 .ls-hero{position:relative;overflow:hidden;background:#102b3b;border:1px solid #274653;border-radius:26px 26px 0 0;padding:2.1rem 2.3rem 1.2rem;color:#fff;isolation:isolate}
 .ls-hero::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 88% 35%,#2063674d,transparent 55%);pointer-events:none;z-index:-1}
 .ls-brand{font-size:.75rem;font-weight:700;letter-spacing:.16em;color:#b9f0df;margin:0 0 1.05rem}
+.ls-nav{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin:0 0 1rem;min-height:48px}
+.ls-nav a{display:inline-flex;align-items:center;min-height:44px;padding:.55rem .85rem;border-radius:10px;color:#385462!important;text-decoration:none;font-size:.92rem;font-weight:600;line-height:1.4}
+.ls-nav a[aria-current="page"]{background:#dfede9;color:#125b57!important}
+.ls-nav a:focus-visible{outline:3px solid #157eac;outline-offset:3px}
 .ls-hero h1{font-size:clamp(2rem,3.8vw,3.5rem)!important;line-height:1.25!important;letter-spacing:-.04em;color:#fff!important;margin:0!important;padding:0!important;max-width:760px}
 .ls-hero h1 span{color:#b9f0df}.ls-hero p{font-size:1rem!important;line-height:1.8!important;color:#d7e5e9;max-width:680px;margin:1rem 0 .6rem}
 .ls-hero-meta{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.2rem}.ls-hero-meta span{font-size:.77rem;color:#e4eeee;border:1px solid #45626d;border-radius:999px;padding:.3rem .65rem}
@@ -128,29 +132,35 @@ def focus_upload_when_requested():
 
 
 def render_intro(root: Path):
+    from ui_i18n import app_url, t
+    from site_pages import render_navigation, render_site_view
+    render_navigation()
+    if render_site_view(root):
+        st.stop()
     bars = "".join(f'<rect x="{i * 7}" y="{(90-h)/2}" width="3" height="{h}" rx="1.5"/>'
                    for i, h in enumerate([8,14,22,12,36,52,30,65,43,80,52,37,62,90,58,76,43,28,56,34,68,45,27,54,32,18,30,15,10]))
-    st.markdown('<section class="ls-hero" aria-label="LandscapeSound 景观听见">'
-        '<div class="ls-brand">LANDSCAPESOUND · 景观听见</div>'
-        '<h1>让风景，<span>慢慢被听见。</span></h1>'
-        '<p>上传一张全景，用属于这幅画面的声音和自然讲述，感受眼前的方向、层次与细节。</p>'
-        '<div class="ls-hero-meta"><span>GPT 画面理解</span><span>本图专属声景</span><span>自然中文导览</span></div>'
+    st.markdown('<section class="ls-hero" aria-label="'+t('LandscapeSound 景观听见','LandscapeSound')+'">'
+        '<div class="ls-brand">'+t('LANDSCAPESOUND · 景观听见','LANDSCAPESOUND')+'</div>'
+        '<h1>'+t('让风景，<span>慢慢被听见。</span>', 'Let the landscape<br><span>be heard.</span>')+'</h1>'
+        '<p>'+t('上传一张全景，用属于这幅画面的声音和自然讲述，感受眼前的方向、层次与细节。',
+                 'Bring a panorama. Explore its directions, layers and details through image-specific sounds and a natural Chinese guide.')+'</p>'
+        '<div class="ls-hero-meta"><span>'+t('GPT 画面理解','GPT image understanding')+'</span><span>'+t('本图专属声景','Image-specific soundscapes')+'</span><span>'+t('自然中文导览','Natural Chinese narration')+'</span></div>'
         f'<svg class="ls-wave" viewBox="0 0 203 90" fill="#b9f0df" aria-hidden="true">{bars}</svg></section>',
         unsafe_allow_html=True)
     with st.container(key="hero_actions"):
         left, middle, right = st.columns([1.2, 1.1, 1.2])
-        left.button("上传全景，开始体验", type="primary", on_click=_choose_panorama,
+        left.button(t("上传全景，开始体验", "Upload a panorama"), type="primary", on_click=_choose_panorama,
                     key="begin_panorama", width="stretch")
-        middle.button("先听一个已完成示例", on_click=_choose_panorama, args=(False,),
+        middle.button(t("先听一个已完成示例", "Listen to a saved example"), on_click=_choose_panorama, args=(False,),
                       key="preview_panorama", width="stretch")
-        if (Path(root)/"docs"/"multiscene_automatic_evaluation.html").is_file():
-            right.link_button("溪流 · 海岸 · 街道对比", "http://127.0.0.1:8502/docs/multiscene_automatic_evaluation.html", width="stretch")
-        elif (Path(root)/"docs"/"automatic_panorama_demo.html").is_file():
-            right.link_button("查看完整体验记录", "http://127.0.0.1:8502/docs/automatic_panorama_demo.html", width="stretch")
-    st.markdown('<section class="ls-path" aria-label="三步开始体验">'
-        '<article><b>01</b><div><strong>带来一幅风景</strong><small>上传完整全景，或选择已完成示例。</small></div></article>'
-        '<article><b>02</b><div><strong>等待本图理解与生成</strong><small>进度随时可见，已完成的步骤会保留。</small></div></article>'
-        '<article><b>03</b><div><strong>按自己的节奏听</strong><small>切换方向，朗读导览，也可以随时停止。</small></div></article></section>',
+        right.link_button(t("溪流 · 海岸 · 街道对比", "Compare stream, coast and street"), app_url('compare'), width="stretch")
+    steps = [
+        ('01', t('带来一幅风景','Bring a landscape'), t('上传完整全景，或选择已完成示例。','Upload a complete panorama or choose a saved example.')),
+        ('02', t('等待本图理解与生成','Let the scene take shape'), t('进度随时可见，已完成的步骤会保留。','Follow the progress. Completed steps are saved.')),
+        ('03', t('按自己的节奏听','Listen at your own pace'), t('切换方向，朗读导览，也可以随时停止。','Change direction, play the Chinese guide, or stop at any time.')),
+    ]
+    st.markdown('<section class="ls-path" aria-label="'+t('三步开始体验','Three steps to begin')+'">'+
+        ''.join('<article><b>'+number+'</b><div><strong>'+html.escape(title)+'</strong><small>'+html.escape(description)+'</small></div></article>' for number,title,description in steps)+'</section>',
         unsafe_allow_html=True)
 
 
@@ -160,6 +170,8 @@ def section(kicker, title, description=""):
 
 
 def care_note():
-    st.markdown('<aside class="ls-care"><strong>先把音量放轻一点。</strong>'
-        '建议戴上耳机，从舒适的音量开始。你可以先听一侧，再慢慢转向另一侧；声音与朗读都能随时停止。</aside>',
+    from ui_i18n import t
+    st.markdown('<aside class="ls-care"><strong>'+t('先把音量放轻一点。','Start softly.')+'</strong>'+t(
+        '建议戴上耳机，从舒适的音量开始。你可以先听一侧，再慢慢转向另一侧；声音与朗读都能随时停止。',
+        'Use headphones at a comfortable volume. Explore one direction at a time. You can stop the sound or narration whenever you need.')+'</aside>',
         unsafe_allow_html=True)

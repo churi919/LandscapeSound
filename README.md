@@ -8,7 +8,7 @@ LandscapeSound is a Windows-first research prototype for image-guided soundscape
 
 Upload a complete 360° panorama to automatically run GPT image interpretation, generate audio for that image, and synthesize a Chinese guide. Switch between four viewing directions while comparing the picture with the sound, and stop playback or narration at any time. The sound is a simulation designed from the image, **not a field recording of the photographed location**.
 
-This README is available in English and Simplified Chinese. The current application interface and neural narration are in **Simplified Chinese**; an English narration voice is not provided.
+The application interface, saved-example pages and documentation support **English and Simplified Chinese**. Generated narration currently remains in **Chinese**. Switching the interface language does not regenerate or translate the audio.
 
 [Listen to the demo](#listen-to-the-existing-demo) · [Install and run](#install-and-run-the-application) · [Architecture](docs/architecture.md) · [Third-party notices](THIRD_PARTY_NOTICES.md) · [Audio runtime](audio_model/README.md)
 
@@ -26,7 +26,7 @@ GitHub's source view does not execute HTML. After downloading or cloning the rep
 py -3.11 -m http.server 8502 --bind 127.0.0.1
 ```
 
-Open <http://127.0.0.1:8502/demo_public/>. This page plays saved results; uploading a new image requires the main application described below.
+Open <http://127.0.0.1:8502/demo_public/?lang=en>. This page plays saved results; uploading a new image requires the main application described below.
 
 After starting the application, **“先听一个已完成示例”** (“Listen to a completed example”) can also load this bundled demo without a separate static server, model downloads, or a GPT request.
 
@@ -122,7 +122,9 @@ Double-click `start_windows.bat`, or run:
 .\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1 --server.port 8501
 ```
 
-Open <http://127.0.0.1:8501/>. Panorama upload is selected by default. Confirm that the image covers a complete 360° × 180° panorama to start the five-stage workflow automatically. An ordinary wide photograph is not a spherical panorama merely because it has a 2:1 aspect ratio.
+Open <http://127.0.0.1:8501/?lang=en>. Panorama upload is selected by default. Confirm that the image covers a complete 360° × 180° panorama to start the five-stage workflow automatically. An ordinary wide photograph is not a spherical panorama merely because it has a 2:1 aspect ratio.
+
+Use the sidebar's **中文 / English** control to switch language. Saved examples, scene comparisons and the in-app guides keep the chosen language when you follow their links. You can also open the [Chinese interface](http://127.0.0.1:8501/?lang=zh-CN) directly. The saved-example and comparison pages run inside the main application without a second static server. Existing Chinese guide text is identified as original content in the English interface.
 
 After refreshing, use **“继续查看最近的全景任务”** (“Continue recent panorama tasks”) to recover local results. If a task fails, select **“继续自动生成”** (“Continue automatic generation”) to complete missing stages. To exit, press Ctrl+C in the launch terminal, or use `stop_windows.ps1` to stop this project's service.
 
@@ -141,6 +143,7 @@ Xiaoxiao is a neural synthetic voice, not a human recording. `edge-tts` is a thi
 
 ```text
 app.py / ui_theme.py             Main interface and readability styling
+ui_i18n.py / site_pages.py       Session language and matching website pages
 panorama_ui.py                   Upload, recovery, and four-view inspection
 panorama_pipeline.py             Five-stage tasks, cache checks, and recovery
 gpt_cli_bridge.py / gpt_scene_audio.py
@@ -165,7 +168,7 @@ python -m pip install -r requirements-test.txt
 python -m pytest tests -q
 ```
 
-In a clean source copy without models, historical outputs, original photographs, or the local runtime environments, the project tests produced **142 passed**. The tests do not require a GPT login or online narration. Node.js enables 3 browser-script checks; those 3 checks are explicitly skipped when Node is absent. `pytest.ini` separates project tests from tests in downloaded third-party code. Engineering checks cover cache identity, parsing, recovery, audio processing, and control logic; they do not establish segmentation accuracy, soundscape naturalness, or target-user outcomes.
+In a clean source copy without models, historical outputs, original photographs, or the local runtime environments, the project tests produced **159 passed**. The tests do not require a GPT login or online narration. Node.js enables 3 browser-script checks; those 3 checks are explicitly skipped when Node is absent. `pytest.ini` separates project tests from tests in downloaded third-party code. Engineering checks cover cache identity, parsing, recovery, audio processing, and control logic; they do not establish segmentation accuracy, soundscape naturalness, or target-user outcomes.
 
 ## Sources and licensing
 

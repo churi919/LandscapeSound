@@ -14,6 +14,8 @@ import time
 import uuid
 
 import streamlit as st
+from ui_i18n import init_language, render_language_switcher, get_language, t
+from ui_labels import tr_ui, category_label, direction_label, ui_formatter, keep_ui_widget, localized_uploader
 
 
 def _read_json(path):
@@ -140,21 +142,23 @@ def render_recent_auto_upload(root):
     """Recover a task after a browser refresh has cleared the upload widget."""
     items=recent_upload_requests(root)
     if not items:
-        st.caption('最近还没有可恢复的本机全景任务。')
+        st.caption(tr_ui('最近还没有可恢复的本机全景任务。'))
         return None
     by_id={item['job_id']:item for item in items}
     labels={'pending':'待开始','running':'处理中','complete':'已完成','failed':'需重试','cancelled':'已停止'}
-    st.caption('也可以找回最近的本机任务，无需重新上传；仍会核对原始图片与完整结果。')
-    selected=st.selectbox('继续查看最近的全景任务',list(by_id),index=None,
-        placeholder='选择一条本机任务',format_func=lambda job:by_id[job]['title']+' · '+labels.get(by_id[job]['status'],'待查看'),
+    st.caption(tr_ui('也可以找回最近的本机任务，无需重新上传；仍会核对原始图片与完整结果。'))
+    if get_language() == 'en':
+        st.caption('Saved task titles retain their original language.')
+    selected=keep_ui_widget(st.selectbox, tr_ui('继续查看最近的全景任务'),list(by_id),index=None,
+        placeholder=tr_ui('选择一条本机任务'),format_func=lambda job, language=get_language():by_id[job]['title']+' · '+tr_ui(labels.get(by_id[job]['status'],'待查看'), language),
         key='recent_auto_upload_job')
     if selected is None:return None
     try:
         saved=load_saved_upload(selected,root)
         return render_auto_upload(saved['raw'],saved['title'],root)
     except (OSError,ValueError,RuntimeError) as exc:
-        st.error('这条本机任务暂时无法恢复。已有文件会保留，可重新上传原图。')
-        with st.expander('查看恢复信息'):st.code(f'{type(exc).__name__}: {exc}',language=None)
+        st.error(tr_ui('这条本机任务暂时无法恢复。已有文件会保留，可重新上传原图。'))
+        with st.expander(tr_ui('查看恢复信息')):st.code(f'{type(exc).__name__}: {exc}',language=None)
         return None
 
 
@@ -216,50 +220,51 @@ def _show_steps(status):
         message='本次生成暂未完成，已完成的步骤已保留。'
     elif status.get('status')=='cancelled':
         message='本次生成已停止，已完成的步骤已保留。'
-    st.progress(completed/max(len(steps),5),text=message)
+    st.progress(completed/max(len(steps),5),text=tr_ui(message))
     symbols={'complete':'✓','cached':'✓','running':'●','pending':'○','failed':'!','cancelled':'－'}
     names={'complete':'已完成','cached':'已完成 · 已保留','running':'正在处理','pending':'稍后开始','failed':'可以继续重试','cancelled':'已停止'}
     cards=[]
     for step in steps:
         kind=step.get('status','pending')
         cards.append('<li data-state="'+html.escape(kind)+'"><strong>'+symbols.get(kind,'○')+' '+
-            html.escape(str(step.get('label',step.get('id',''))))+'</strong>'+names.get(kind,'稍后开始')+'</li>')
-    st.markdown('<ol class="ls-pipeline" aria-label="自动生成进度">'+''.join(cards)+'</ol>',unsafe_allow_html=True)
+            html.escape(tr_ui(str(step.get('label',step.get('id','')))))+'</strong>'+tr_ui(names.get(kind,'稍后开始'))+'</li>')
+    st.markdown('<ol class="ls-pipeline" aria-label="'+t('自动生成进度','Automatic generation progress')+'">'+''.join(cards)+'</ol>',unsafe_allow_html=True)
 
 
 @st.fragment(run_every='2s')
 def _pipeline_progress(job_id,root,raw,title):
+    init_language()
     from panorama_pipeline import load_job,load_pipeline_result,request_cancel
     status=load_job(job_id,root=root) or {'status':'pending','message':'正在启动自动生成…','steps':[]}
     _show_steps(status)
     kind=status.get('status')
     if kind=='complete':
         if load_pipeline_result(job_id,root=root,verify=True):
-            st.success('GPT理解、专属声景和自然配音已完成。')
+            st.success(tr_ui('GPT理解、专属声景和自然配音已完成。'))
             st.rerun(scope='app')
         elif worker_is_running(job_id,root,status):
-            st.caption('正在重新核验与恢复这张全景的完整结果…')
+            st.caption(tr_ui('正在重新核验与恢复这张全景的完整结果…'))
         else:
-            st.warning('本图缓存未通过完整校验，可保留有效步骤并重新生成缺失内容。')
-            if st.button('重新核验并继续生成',key='repair_auto_'+job_id):
+            st.warning(tr_ui('本图缓存未通过完整校验，可保留有效步骤并重新生成缺失内容。'))
+            if st.button(tr_ui('重新核验并继续生成'),key='repair_auto_'+job_id):
                 launch_pipeline_worker(raw,title,root,retry=True)
                 st.rerun(scope='app')
     elif kind in {'failed','cancelled'} or (worker_record(job_id,root) and not worker_is_running(job_id,root,status)):
-        st.warning('本次自动生成已停止，已完成的步骤会保留。可继续重试。')
+        st.warning(tr_ui('本次自动生成已停止，已完成的步骤会保留。可继续重试。'))
         error_text=str(status.get('error','')).lower()
         if any(term in error_text for term in ('ram available','system ram','memory deferred','system memory')):
-            st.caption('电脑当前可用内存有些紧张。稍后点击继续即可，图片理解和已完成内容不需要重做。')
-        if st.button('继续自动生成',key='retry_auto_'+job_id):
+            st.caption(tr_ui('电脑当前可用内存有些紧张。稍后点击继续即可，图片理解和已完成内容不需要重做。'))
+        if st.button(tr_ui('继续自动生成'),key='retry_auto_'+job_id):
             launch_pipeline_worker(raw,title,root,retry=True)
             st.rerun(scope='app')
         detail=status.get('error')
         if detail:
-            with st.expander('查看本次信息'):st.code(str(detail),language=None)
+            with st.expander(tr_ui('查看本次信息')):st.code(str(detail),language=None)
     else:
-        st.caption('可以继续查看进度。刷新页面不会重复启动同一张图的任务。')
-        if st.button('停止本次生成',key='cancel_auto_'+job_id):
+        st.caption(tr_ui('可以继续查看进度。刷新页面不会重复启动同一张图的任务。'))
+        if st.button(tr_ui('停止本次生成'),key='cancel_auto_'+job_id):
             request_cancel(job_id,root=root)
-            st.info('已请求停止，当前步骤结束后会保留结果并停止后续步骤。')
+            st.info(tr_ui('已请求停止，当前步骤结束后会保留结果并停止后续步骤。'))
 
 
 def render_auto_upload(raw,title,root):
@@ -270,11 +275,11 @@ def render_auto_upload(raw,title,root):
     if status and status.get('status')=='complete':
         result=load_pipeline_result(job_id,root=root,verify=True)
         if not result:
-            st.error('已保存的完整结果没有通过校验，暂不加载试听。')
+            st.error(tr_ui('已保存的完整结果没有通过校验，暂不加载试听。'))
             _pipeline_progress(job_id,root,raw,title)
             return None
-        st.success('这张全景已自动完成GPT理解、专属声景与自然配音。')
-        st.caption('已加载本图完整结果。重新打开同一张图片时会核验缓存，不重新发送到GPT。')
+        st.success(tr_ui('这张全景已自动完成GPT理解、专属声景与自然配音。'))
+        st.caption(tr_ui('已加载本图完整结果。重新打开同一张图片时会核验缓存，不重新发送到GPT。'))
         return result
     launch_pipeline_worker(raw,title,root)
     _pipeline_progress(job_id,root,raw,title)

@@ -10,18 +10,22 @@ import re
 import streamlit as st
 import streamlit.components.v1 as components
 
+from ui_i18n import app_url, get_language, normalize_language
+
 
 MEDIA = {'image': ('images', {'.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp'}),
          'audio': ('audio', {'.ogg': 'audio/ogg'}),
          'narration': ('narration', {'.mp3': 'audio/mpeg'})}
 
 
-def build_public_demo_html(root):
+def build_public_demo_html(root, language=None, view='demo'):
     """Embed only manifest-listed, hash-verified assets inside demo_public.
 
     No model/runtime imports, arbitrary local paths, remote media requests or
     user-uploaded HTML are involved. Existing public-page layout is retained.
     """
+    language = normalize_language(language or get_language())
+    view = view if view in ('demo', 'compare') else 'demo'
     root = Path(root).resolve()
     folder = (root / 'demo_public').resolve()
     if not folder.is_relative_to(root):
@@ -76,26 +80,42 @@ def build_public_demo_html(root):
         return 'src="' + embedded[source] + '"'
 
     document = re.sub(r'\bsrc\s*=\s*([\"\'])(.*?)\1', media_source, document, flags=re.I)
+    # srcdoc does not inherit the parent's query string. Pass both the selected
+    # language and every same-language parent route explicitly into the page.
+    config_pattern = r'(<script id="ls-demo-config" type="application/json">)(.*?)(</script>)'
+    def embedded_config(match):
+        config = json.loads(match.group(2))
+        config.update(language=language, forced_language=True, embedded=True,
+                      current_view=view,
+                      app_links={lang: {name: app_url(None if name == 'home' else name, lang)
+                                        for name in ('home', 'demo', 'compare', 'guide', 'notices')}
+                                 for lang in ('zh-CN', 'en')})
+        return match.group(1) + json.dumps(config, ensure_ascii=False).replace('<', '\\u003c') + match.group(3)
+    document = re.sub(config_pattern, embedded_config, document, flags=re.S)
+    document = re.sub(r'<html lang="[^"]+">', '<html lang="' + language + '">', document, count=1)
     # Relative metadata/notice links cannot rely on a second local web server.
     meta_data = base64.b64encode(metadata_file.read_bytes()).decode('ascii')
     document = document.replace('href="metadata.json"', 'download="LandscapeSound-demo-metadata.json" href="data:application/json;base64,' + meta_data + '"')
-    notice = (root / 'THIRD_PARTY_NOTICES.md').resolve()
-    if notice.is_relative_to(root) and notice.is_file() and notice.stat().st_size < 256 * 1024:
-        notice_data = base64.b64encode(notice.read_bytes()).decode('ascii')
-        document = document.replace('href="../THIRD_PARTY_NOTICES.md"', 'download="THIRD_PARTY_NOTICES.md" href="data:text/plain;base64,' + notice_data + '"')
-    else:
-        document = document.replace('href="../THIRD_PARTY_NOTICES.md"', 'href="https://github.com/churi919/LandscapeSound"')
+    for lang, filename in (('zh-CN', 'THIRD_PARTY_NOTICES.zh-CN.md'), ('en', 'THIRD_PARTY_NOTICES.md')):
+        document = document.replace('href="../' + filename + '"',
+            'target="_top" href="' + app_url('notices', lang).replace('&', '&amp;') + '"')
     return document
 
 
-def render_public_demo(root):
-    st.info('已保存的公开示例：可直接试听，无需模型或联网。完整上传流程请切换到“上传我的全景图”。')
-    st.caption('这里播放已生成结果，不会运行新的图像理解，也不把完整全景图伪装成可转向的四方向分析。')
+def render_public_demo(root, language=None):
+    language = normalize_language(language or get_language())
+    def tr(chinese, english):
+        return english if language == 'en' else chinese
+    st.info(tr('已保存的公开示例：可直接试听，无需模型或联网。完整上传流程请切换到“上传我的全景图”。',
+        'Saved public examples: listen without models or an internet connection. Select “Upload my panorama” for the complete upload workflow.'))
+    st.caption(tr('这里播放已生成结果，不会运行新的图像理解，也不把完整全景图伪装成可转向的四方向分析。',
+        'This page plays saved results without running new image understanding. Complete panoramas are shown as images, rather than interactive four-direction analysis.'))
     try:
-        document = build_public_demo_html(root)
+        document = build_public_demo_html(root, language, view=st.query_params.get('view', 'demo'))
     except (OSError, ValueError, TypeError, KeyError) as exc:
-        st.warning('公开试听包暂未通过完整校验。你仍可上传自己的全景图。')
-        with st.expander('查看示例信息'):
+        st.warning(tr('公开试听包暂未通过完整校验。你仍可上传自己的全景图。',
+            'The public demo package could not be verified. You can still upload your own panorama.'))
+        with st.expander(tr('查看示例信息', 'View demo details')):
             st.code(str(exc), language=None)
         return False
     components.html(document, height=1080, scrolling=True)
