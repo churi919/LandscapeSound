@@ -1,0 +1,476 @@
+{
+  "schema_version": 1,
+  "title": "LandscapeSound four-scene public demo",
+  "created_utc": "2026-10-25T14:39:41.946587+00:00",
+  "scenes": [
+    {
+      "id": "monbachtal_riverbank",
+      "title": "苔岩浅溪与低跌水",
+      "group": "浅溪",
+      "image": {
+        "file": "images/monbachtal_riverbank.jpg",
+        "width": 1024,
+        "height": 512,
+        "sha256": "db2c3170dc214dd197a572b0052536e559acf098ae6602ed6e513e3ab4518e76",
+        "source_image_sha256": "8cbe3df6989d6dd1a47bdd42259442d0aef29e296e8ebafd302b0e452a592879",
+        "source_title": "Monbachtal Riverbank",
+        "source_url": "https://polyhaven.com/a/monbachtal_riverbank",
+        "authors": {
+          "Andreas Mischok": "All"
+        },
+        "license": "CC0-1.0",
+        "license_url": "https://polyhaven.com/license",
+        "credit": "Powered by Poly Haven",
+        "processing": "Complete ERP resized to 1024x512 JPEG quality80; no scene edits; no EXIF copied."
+      },
+      "audio": {
+        "codec": "OGG Vorbis",
+        "lossy_listening_copy": true,
+        "encoder": "soundfile 0.14.0 / libsndfile 1.2.2",
+        "encoding_quality": "libsndfile Vorbis default",
+        "duration_seconds": 28.0,
+        "sample_rate": 32000,
+        "channels": 1,
+        "decoded_peak": 0.5387569069862366,
+        "decoded_rms": 0.05245190158167418,
+        "file": "audio/monbachtal_riverbank.ogg",
+        "sha256": "dd3f5ef5d36cb138571ed23575a31fac8407ba6cfe7e179c00a9318ec563f9e6",
+        "source_comparison_wav_sha256": "d07458200a474bdebe40dd9999ca795fa76df8198df0e86e6b98710bcd42d4ba",
+        "source_comparison_target_lufs": -23.0,
+        "note": "Lossy listening copy. Reported CLAP scores and exact loudness matching refer to the uncompressed comparison WAV, not a re-scoring of this OGG."
+      },
+      "narration": {
+        "file": "narration/monbachtal_riverbank.mp3",
+        "sha256": "a50626e8260c6eee36c0274e64be28b9348b9af1d5101499cdf57967f28ae5e7",
+        "text": "你面前是一片岩石环绕的林间浅溪，中央能看到几级小跌水，水面之间散布着大小石块。左侧岩壁层理明显，部分表面覆着青苔；右侧是露出树根的土坡和小径，回头还能看见斜横的倒木。这只是图片中的景观估计，流水声将作模拟，水边是否便于通行仍不确定。",
+        "text_sha256": "a8df01502c41115abf2714f224c48a12d47c8d20e59ea35d329bf5c019caa9f2",
+        "voice_id": "zh-CN-XiaoxiaoNeural",
+        "duration_seconds": 26.232,
+        "provider": "Microsoft online neural TTS via edge-tts",
+        "neural": true,
+        "human_recording": false
+      },
+      "gpt": {
+        "provider": "codex_cli",
+        "model": "gpt-6.1-sol"
+      },
+      "visible_facts_zh": [
+        "林地中可见高大树木、裸露树根、落叶与覆有苔藓的岩石。",
+        "前方层状岩壁之间可见浅溪、数级小跌水和岩石间的水面。",
+        "右侧可见土质小径和散布的石块，后方可见斜横的倒木。"
+      ],
+      "sound_prompts": [
+        {
+          "category": "stream",
+          "prompt": "A gentle connected stream flows through narrow stone channels, with rounded low gurgles beneath a soft liquid murmur. Small cascades add occasional fuller burbles that swell briefly and settle back into the continuous current. Let the texture vary slowly, leaving quiet gaps between the more distinct gurgles while the underlying flow remains smooth and modest in intensity. Keep the described water scale and rhythm: continuous irregular liquid movement, with falling water only where described; avoid rain-on-leaves ticks and a uniform broadband rain curtain.",
+          "seed": 1640460059
+        }
+      ],
+      "view_sources": {
+        "front": [
+          {
+            "category": "stream",
+            "azimuth": 0.0,
+            "virtual_radius": 3.5,
+            "spread_degrees": 30.0
+          }
+        ],
+        "right": [],
+        "back": [],
+        "left": [
+          {
+            "category": "stream",
+            "azimuth": 20.0,
+            "virtual_radius": 3.5,
+            "spread_degrees": 26.0
+          }
+        ]
+      },
+      "clap_label_cosines": {
+        "coastal_surf": 0.10054420431454976,
+        "rocky_stream_cascade": 0.5349973440170288,
+        "road_vehicle_ambience": -0.15949081381162009,
+        "tree_leaf_rustling": 0.10536272327105205,
+        "gentle_wind": -0.08090437079469363,
+        "strong_windstorm": -0.030512800440192223,
+        "steady_rain": 0.620146910349528,
+        "large_waterfall": 0.3760867516199748,
+        "quiet_lake_ripples": 0.2123000274101893,
+        "isolated_drips": 0.2432760695616404,
+        "birds": 0.004614768549799919,
+        "insects": 0.09610535204410553,
+        "human_speech": -0.0029651528845230737,
+        "music": 0.1260255053639412,
+        "mechanical_hiss": 0.27431682745615643,
+        "abrupt_impacts": 0.016674720371762913,
+        "horns_sirens": -0.04074888055523237
+      }
+    },
+    {
+      "id": "crystal_falls",
+      "title": "岩壁瀑布与开阔水潭",
+      "group": "岩壁瀑布",
+      "image": {
+        "file": "images/crystal_falls.jpg",
+        "width": 1024,
+        "height": 512,
+        "sha256": "b4bf4763b52a9b3ad4242114b21db64c6dcb6e932f39ae0b4fefecb9f0afa429",
+        "source_image_sha256": "542526455af2b75a3f4ba2f21ca7a16b016243b4bbe51533d1fe438afc24a0a8",
+        "source_title": "Crystal Falls",
+        "source_url": "https://polyhaven.com/a/crystal_falls",
+        "authors": {
+          "Greg Zaal": "All"
+        },
+        "license": "CC0-1.0",
+        "license_url": "https://polyhaven.com/license",
+        "credit": "Powered by Poly Haven",
+        "processing": "Complete ERP resized to 1024x512 JPEG quality80; no scene edits; no EXIF copied."
+      },
+      "audio": {
+        "codec": "OGG Vorbis",
+        "lossy_listening_copy": true,
+        "encoder": "soundfile 0.14.0 / libsndfile 1.2.2",
+        "encoding_quality": "libsndfile Vorbis default",
+        "duration_seconds": 28.0,
+        "sample_rate": 32000,
+        "channels": 1,
+        "decoded_peak": 0.44939637184143066,
+        "decoded_rms": 0.05778230915355677,
+        "file": "audio/crystal_falls.ogg",
+        "sha256": "77180902e233a882caa9e983792298e954540eea0144f5038e8e1010943eec4d",
+        "source_comparison_wav_sha256": "8fc7df957a71f00f273567f83606fccfab608806597135260339b60faecc8022",
+        "source_comparison_target_lufs": -23.0,
+        "note": "Lossy listening copy. Reported CLAP scores and exact loudness matching refer to the uncompressed comparison WAV, not a re-scoring of this OGG."
+      },
+      "narration": {
+        "file": "narration/crystal_falls.mp3",
+        "sha256": "f1df6b2b93b845cf2cfae5f0f49eb2369b668957d49530737f00267228f5bc1d",
+        "text": "从画面看，你像是站在树木环绕的岩石浅水边。前方散布着大小石块，右侧是一片沙砾地和巨石；转向左后方，能看见岩壁上的白色瀑布，以及下方相连的浅水。这里的声音仅作模拟，实际水势、距离和响度无法凭照片确定，水边能否安全通行也无法判断。",
+        "text_sha256": "05848449ba280016d592daebb452debc4aa8582d850be0a51d476959dc2c4b77",
+        "voice_id": "zh-CN-XiaoxiaoNeural",
+        "duration_seconds": 25.728,
+        "provider": "Microsoft online neural TTS via edge-tts",
+        "neural": true,
+        "human_recording": false
+      },
+      "gpt": {
+        "provider": "codex_cli",
+        "model": "gpt-6.1-sol"
+      },
+      "visible_facts_zh": [
+        "岩壁一侧可见白色瀑布水带，下方连接浅水池和岩石间的水道。",
+        "前方可见大小不一的岩石，周围有树木、树根和浓密枝叶。",
+        "右侧可见沙砾地面、大块岩石及放置在岩石旁的物品。",
+        "后方和左侧视图均能看到瀑布或其下方的浅水区域。"
+      ],
+      "sound_prompts": [
+        {
+          "category": "stream",
+          "prompt": "A connected rocky stream flows with rounded low gurgles and smooth liquid movement through uneven channels. A fuller falling-water layer gently swells behind the nearer current, blending into soft pool resonance. Small surges arrive irregularly, followed by brief openings between foreground burbles while the underlying flow remains continuous. Keep the texture spacious, fluid, and moderately dense, with gradual changes in emphasis. Keep the described water scale and rhythm: continuous irregular liquid movement, with falling water only where described; avoid rain-on-leaves ticks and a uniform broadband rain curtain.",
+          "seed": 1199464002
+        }
+      ],
+      "view_sources": {
+        "front": [
+          {
+            "category": "stream",
+            "azimuth": -10.0,
+            "virtual_radius": 3.2,
+            "spread_degrees": 35.0
+          }
+        ],
+        "right": [
+          {
+            "category": "stream",
+            "azimuth": -35.0,
+            "virtual_radius": 3.8,
+            "spread_degrees": 18.0
+          }
+        ],
+        "back": [
+          {
+            "category": "stream",
+            "azimuth": 40.0,
+            "virtual_radius": 5.2,
+            "spread_degrees": 16.0
+          }
+        ],
+        "left": [
+          {
+            "category": "stream",
+            "azimuth": -32.0,
+            "virtual_radius": 4.5,
+            "spread_degrees": 28.0
+          }
+        ]
+      },
+      "clap_label_cosines": {
+        "coastal_surf": 0.15895627439022064,
+        "rocky_stream_cascade": 0.6384182373682658,
+        "road_vehicle_ambience": -0.11510069668292999,
+        "tree_leaf_rustling": 0.05257242793838183,
+        "gentle_wind": -0.005287933473785718,
+        "strong_windstorm": 0.028133221591512363,
+        "steady_rain": 0.6193695068359375,
+        "large_waterfall": 0.46318337321281433,
+        "quiet_lake_ripples": 0.27170275151729584,
+        "isolated_drips": 0.21525079011917114,
+        "birds": -0.012359031165639559,
+        "insects": 0.11613759150107701,
+        "human_speech": 0.057682111859321594,
+        "music": 0.1053451548020045,
+        "mechanical_hiss": 0.3009210228919983,
+        "abrupt_impacts": 0.00522604522605737,
+        "horns_sirens": -0.03386101623376211
+      }
+    },
+    {
+      "id": "secluded_beach",
+      "title": "沙石海滩与近岸浪线",
+      "group": "海边",
+      "image": {
+        "file": "images/secluded_beach.jpg",
+        "width": 1024,
+        "height": 512,
+        "sha256": "283053f7e2f90e88de39a156b51e1856750e29f7f01a58cbf1c241a23bf2e072",
+        "source_image_sha256": "307d80ab87c323fcb062697b27aa584ea9284f11f88a69d65c02089a1a3e0cc8",
+        "source_title": "Secluded Beach",
+        "source_url": "https://polyhaven.com/a/secluded_beach",
+        "authors": {
+          "Greg Zaal": "All",
+          "Rico Cilliers": "Backplates"
+        },
+        "license": "CC0-1.0",
+        "license_url": "https://polyhaven.com/license",
+        "credit": "Powered by Poly Haven",
+        "processing": "Complete ERP resized to 1024x512 JPEG quality80; no scene edits; no EXIF copied."
+      },
+      "audio": {
+        "codec": "OGG Vorbis",
+        "lossy_listening_copy": true,
+        "encoder": "soundfile 0.14.0 / libsndfile 1.2.2",
+        "encoding_quality": "libsndfile Vorbis default",
+        "duration_seconds": 28.0,
+        "sample_rate": 32000,
+        "channels": 1,
+        "decoded_peak": 0.4669775068759918,
+        "decoded_rms": 0.03933700610349694,
+        "file": "audio/secluded_beach.ogg",
+        "sha256": "b708469e6ff7cbb7e3911f7b9fdf75b250e33873c357ebfaf12dfbfa10effb1f",
+        "source_comparison_wav_sha256": "76606e2802f9275638fdf992ec8ac1909edd2eebf5e0640a33a4ad8c7af03429",
+        "source_comparison_target_lufs": -23.0,
+        "note": "Lossy listening copy. Reported CLAP scores and exact loudness matching refer to the uncompressed comparison WAV, not a re-scoring of this OGG."
+      },
+      "narration": {
+        "file": "narration/secluded_beach.mp3",
+        "sha256": "d01a9abb39a3d7dd7bc9915723c6011668cce9c0ffd50faaf554ac9731925e53",
+        "text": "你面前是一片被岩石围出的湾状水面，浅色沙滩沿两侧展开，沙上散落着深色条状物。向右看，树枝伸向明亮的天空；转到后方，则是较密的灌木和树木。根据画面估计，这里像是一处小海湾，但水深、浪况和通行条件无法确认，预体验中的浪声也只是模拟。",
+        "text_sha256": "72c177671b493cc8a383ad81b1113e6bff8847112fe78cca50ab65048539d4e1",
+        "voice_id": "zh-CN-XiaoxiaoNeural",
+        "duration_seconds": 26.04,
+        "provider": "Microsoft online neural TTS via edge-tts",
+        "neural": true,
+        "human_recording": false
+      },
+      "gpt": {
+        "provider": "codex_cli",
+        "model": "gpt-6.1-sol"
+      },
+      "visible_facts_zh": [
+        "前方是湾状水面，水中和岸边分布着大小不一的圆钝岩石。",
+        "浅色沙滩环绕近岸水面，沙上散落深色条状物和一条较长的褐色带状物。",
+        "右侧、后方和左侧可见灌木与树木，部分枝条裸露。",
+        "天空大面积呈蓝色，有少量薄云，右前方水面有明亮反光。"
+      ],
+      "sound_prompts": [
+        {
+          "category": "surf",
+          "prompt": "Gentle shoreline surf rises in slow, rounded swells, unfolding into soft, shallow washes across sand. Each wash thins into a delicate retreat with a faint granular texture. Small wave groups vary subtly in strength and spacing, leaving generous quiet intervals with a low residual water murmur. Keep the overall character restrained, spacious, and softly pulsing.",
+          "seed": 434804779
+        }
+      ],
+      "view_sources": {
+        "front": [
+          {
+            "category": "surf",
+            "azimuth": 0.0,
+            "virtual_radius": 3.5,
+            "spread_degrees": 38.0
+          }
+        ],
+        "right": [
+          {
+            "category": "surf",
+            "azimuth": -28.0,
+            "virtual_radius": 3.8,
+            "spread_degrees": 24.0
+          }
+        ],
+        "back": [],
+        "left": []
+      },
+      "clap_label_cosines": {
+        "coastal_surf": 0.41358577211697894,
+        "rocky_stream_cascade": 0.36275970935821533,
+        "road_vehicle_ambience": 0.04430823028087616,
+        "tree_leaf_rustling": 0.12466281404097874,
+        "gentle_wind": 0.12840374497075877,
+        "strong_windstorm": 0.2556316951910655,
+        "steady_rain": 0.40629757444063824,
+        "large_waterfall": 0.2932090361913045,
+        "quiet_lake_ripples": 0.3484024107456207,
+        "isolated_drips": 0.23387676974137625,
+        "birds": 0.0018975815425316493,
+        "insects": 0.14624913533528647,
+        "human_speech": 0.07629855225483577,
+        "music": -0.00311489791298906,
+        "mechanical_hiss": 0.2452639937400818,
+        "abrupt_impacts": 0.1162018608301878,
+        "horns_sirens": -0.03329927350083987
+      }
+    },
+    {
+      "id": "urban_street_03",
+      "title": "住宅街道与路边停车",
+      "group": "街道",
+      "image": {
+        "file": "images/urban_street_03.jpg",
+        "width": 1024,
+        "height": 512,
+        "sha256": "9f8f2d851566f5594ea7fdec1a603684938ca1b9bcc36a92be31bf5e34023a90",
+        "source_image_sha256": "9148f9df42aba0975fd24bd5da9202139a1876ce7305aef0602da72a7eae5444",
+        "source_title": "Urban Street 03",
+        "source_url": "https://polyhaven.com/a/urban_street_03",
+        "authors": {
+          "Andreas Mischok": "All"
+        },
+        "license": "CC0-1.0",
+        "license_url": "https://polyhaven.com/license",
+        "credit": "Powered by Poly Haven",
+        "processing": "Complete ERP resized to 1024x512 JPEG quality80; no scene edits; no EXIF copied."
+      },
+      "audio": {
+        "codec": "OGG Vorbis",
+        "lossy_listening_copy": true,
+        "encoder": "soundfile 0.14.0 / libsndfile 1.2.2",
+        "encoding_quality": "libsndfile Vorbis default",
+        "duration_seconds": 28.0,
+        "sample_rate": 32000,
+        "channels": 1,
+        "decoded_peak": 0.541763186454773,
+        "decoded_rms": 0.06260677946587938,
+        "file": "audio/urban_street_03.ogg",
+        "sha256": "9660ceccf4dc6df2b9941e8a7d6a16753bcd2f666776068d1cb99c1f841cb7ca",
+        "source_comparison_wav_sha256": "64b7360a8082729a0c879a5e17b4756bba4ef679f5a6b4b006bec1f61e1c9c73",
+        "source_comparison_target_lufs": -23.0,
+        "note": "Lossy listening copy. Reported CLAP scores and exact loudness matching refer to the uncompressed comparison WAV, not a re-scoring of this OGG."
+      },
+      "narration": {
+        "file": "narration/urban_street_03.mp3",
+        "sha256": "2944fb0cf671a55f2d8e6e535b1246a958a1cd59f0149d56724af4b92f9d7683",
+        "text": "眼前是一条两侧排列住宅的街道，路边停着多辆汽车，灰白云层铺满天空。朝右看，多层砖楼带着白色窗框，门前围着灌木和矮墙；朝左是砖墙、灰色大门与树冠。转向后方，还能看见道路和一棵宽大的树。图片无法确认车辆是否行驶，试听中的稀疏车声只是模拟。",
+        "text_sha256": "d980959edb2218cde1c00297272c17695232433136f58a612037199cbf0668da",
+        "voice_id": "zh-CN-XiaoxiaoNeural",
+        "duration_seconds": 27.792,
+        "provider": "Microsoft online neural TTS via edge-tts",
+        "neural": true,
+        "human_recording": false
+      },
+      "gpt": {
+        "provider": "codex_cli",
+        "model": "gpt-6.1-sol"
+      },
+      "visible_facts_zh": [
+        "道路向前方和后方延伸，两侧可见停放的汽车、路缘和人行道。",
+        "右侧是一排带白色窗框和拱形门廊的多层砖楼，前方有灌木和矮墙。",
+        "左侧可见住宅、砖墙、灰色大门和树冠，后方也有一棵宽大的树。",
+        "天空覆盖灰白色云层，路面可见白色标线。"
+      ],
+      "sound_prompts": [
+        {
+          "category": "traffic",
+          "prompt": "A simulated quiet residential street ambience with occasional distant vehicle pass-bys. Soft engine tones gradually emerge, accompanied by a restrained rolling tire texture, then gently recede. Keep the events sparse and irregular, separated by long quiet intervals. Use subtle changes in pitch and level to suggest unhurried passage, with a subdued, spacious background. Keep the described traffic rhythm and distance, with distinct engine and rolling-tire events separated in time rather than a generic broadband noise bed.",
+          "seed": 1902697602
+        }
+      ],
+      "view_sources": {
+        "front": [
+          {
+            "category": "traffic",
+            "azimuth": 0.0,
+            "virtual_radius": 6.5,
+            "spread_degrees": 20.0
+          }
+        ],
+        "right": [],
+        "back": [
+          {
+            "category": "traffic",
+            "azimuth": 0.0,
+            "virtual_radius": 6.5,
+            "spread_degrees": 20.0
+          }
+        ],
+        "left": []
+      },
+      "clap_label_cosines": {
+        "coastal_surf": 0.3193691273530324,
+        "rocky_stream_cascade": 0.029919081057111423,
+        "road_vehicle_ambience": 0.4957281251748403,
+        "tree_leaf_rustling": 0.04503375912706057,
+        "gentle_wind": 0.2741704285144806,
+        "strong_windstorm": 0.32369210322697956,
+        "steady_rain": 0.18140788873036703,
+        "large_waterfall": 0.12513021131356558,
+        "quiet_lake_ripples": 0.06168858458598455,
+        "isolated_drips": 0.07035491243004799,
+        "birds": 0.10584574689467748,
+        "insects": 0.08357276767492294,
+        "human_speech": -0.07349394510189693,
+        "music": 0.14070646713177362,
+        "mechanical_hiss": 0.22881722450256348,
+        "abrupt_impacts": 0.015816647093743086,
+        "horns_sirens": 0.3321533103783925
+      }
+    }
+  ],
+  "pictured_site_recordings": false,
+  "subjective_naturalness_score": null,
+  "evaluation_method": {
+    "model": "laion/clap-htsat-unfused",
+    "measurement_source": "Uncompressed 28-second gain-matched comparison WAV, not the OGG copies",
+    "interpretation": "Exploratory content cosine, not human recognition, naturalness or probabilities"
+  },
+  "pairwise_audio_cosines": [
+    {
+      "a": "monbachtal_riverbank",
+      "b": "crystal_falls",
+      "audio_embedding_cosine": 0.8609567284584045
+    },
+    {
+      "a": "monbachtal_riverbank",
+      "b": "secluded_beach",
+      "audio_embedding_cosine": 0.6085183620452881
+    },
+    {
+      "a": "monbachtal_riverbank",
+      "b": "urban_street_03",
+      "audio_embedding_cosine": 0.1995207965373993
+    },
+    {
+      "a": "crystal_falls",
+      "b": "secluded_beach",
+      "audio_embedding_cosine": 0.6618489027023315
+    },
+    {
+      "a": "crystal_falls",
+      "b": "urban_street_03",
+      "audio_embedding_cosine": 0.21700161695480347
+    },
+    {
+      "a": "secluded_beach",
+      "b": "urban_street_03",
+      "audio_embedding_cosine": 0.2633657455444336
+    }
+  ]
+}
