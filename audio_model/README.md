@@ -1,16 +1,30 @@
 # Local Stable Audio 3 runtime
 
-This directory is independent of the landscape-analysis `.venv`. It contains the official native Windows LiteRT/TFLite runtime, downloaded optimized weights and a reproducible candidate-generation wrapper.
+[English](README.md) | [简体中文](README.zh-CN.md)
+
+The published repository contains the installation and generation scripts, documentation, and license metadata for an audio environment independent of the landscape-analysis `.venv`. The official native Windows LiteRT/TFLite runtime checkout, optimized weights, virtual environment, and generated outputs are downloaded or created locally during installation and use; they are not bundled with this repository.
 
 - Official code: https://github.com/Stability-AI/stable-audio-3
 - Code revision: `77e0398c26f7d22d801ec1bb036307e8b231f741`
 - Public optimized model: https://huggingface.co/stabilityai/stable-audio-3-optimized
 - Model revision: `08b17423649b5714b22eab20f96bf00751f2358a`
-- Runtime: Python 3.11.15, LiteRT 2.3.0, XNNPACK CPU, 8 threads, 8 sampling steps.
+- Recorded test runtime: Python 3.11.15, LiteRT 2.3.0, XNNPACK CPU, 8 threads, 8 sampling steps.
 - Small-SFX: DiT `sm-sfx/w8a8`, decoder `SAME-S/w8a8`. The shared encoder plus these weights total 1,192,498,584 bytes.
 - Medium: DiT `medium/w8a8`, decoder `SAME-L/w8a8`. Its additional weights total 2,183,090,096 bytes. Exact per-file hashes are in `weights_manifest.json`.
 
-All model inference is local. This route uses CPU rather than assuming CUDA/Flash Attention support on this Windows installation. It leaves the existing PyTorch/Transformers application environment unchanged. Model/cache/temp directories are under this folder on D:.
+All audio-model inference is local. This route uses CPU rather than assuming CUDA/Flash Attention support on this Windows installation. It leaves the existing PyTorch/Transformers application environment unchanged. Installed model/cache/temp directories are under this folder on the chosen project drive, which was D: on the recorded test computer.
+
+## Install the independent audio environment
+
+First read the bundled [Stable Audio Community License](model_LICENSE.md), [Gemma terms](model_LICENSE_GEMMA.md), and [model card](model_README.md). If the licensed-use conditions suit your intended use, run this command from the project root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\audio_model\install_windows.ps1 -IncludeMedium -AcceptModelLicense
+```
+
+The installer creates `audio_model/.venv`, retrieves the official runtime at the pinned code revision, and downloads and verifies the Small-SFX, shared encoder, Medium, and SAME-L weights. It requires network access, Python 3.11 or uv, and Git for Windows. `-AcceptModelLicense` is an explicit acknowledgement to review and comply with the bundled model terms; the script does not accept gated-service agreements. Omitting `-IncludeMedium` installs the Small-SFX route only; the main application's current scene-specific audio generation uses Medium.
+
+The timings and memory measurements below are historical observations on the test computer. This repository does not include that computer's generated candidates, model caches, experiment outputs, or logs.
 
 ## Generate or verify the saved candidates
 
