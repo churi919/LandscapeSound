@@ -32,7 +32,9 @@ Visual analysis runs in a separate child process. Once that process exits, its P
 
 `ui_i18n.py` resolves `lang=zh-CN` or `lang=en` for each Streamlit session. The interface stores stable widget values independently of their translated labels. `site_pages.py` keeps examples, comparison pages, and documentation in the selected language, including links within documents. These pages use the main application and do not require a separate static server. The standalone saved demo also accepts the same language parameter.
 
-Language selection changes presentation only. It does not change image fingerprints, task directories, sound prompts, generated tracks, or narration-cache identity. Existing Chinese guide text and speech retain their original language and are identified accordingly in the English interface.
+Language selection also selects spoken-guide language. The original visual report, task, sound prompts and environmental tracks are retained. `narration_localization.py` binds translations to the exact original guide and target language. It reads the cache without network access; an explicitly requested missing translation uses the existing isolated GPT client with no tools. The host prepares missing target-language speech once, then reuses it. A failed preparation requires an explicit retry and cannot substitute speech in the other language.
+
+The underlying five-stage job retains its original Chinese guide and audio. English playback uses a separately cached language overlay after that job completes, without rerunning visual or sound generation. English defaults to `en-US-JennyNeural`, with `en-US-GuyNeural` optional; Chinese retains `zh-CN-XiaoxiaoNeural` and `zh-CN-YunxiNeural`. Speech validation binds exact text, voice, synthesis settings, language, audio checksum and duration. Public examples include independent English `.en.mp3` files alongside the preserved Chinese files.
 
 ## Task and cache identity
 
