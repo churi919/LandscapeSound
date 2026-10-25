@@ -44,13 +44,15 @@ def test_language_switch_preserves_original_report_and_never_starts_generation()
                       'corrected_sources':[],'corrected_description':'原始中文导览。',
                       'result_key':'language-preserved-report','user_corrected':False}.items():
         app.session_state[key]=copy.deepcopy(value)
-    with patch('auto_pipeline_ui.launch_pipeline_worker') as worker, patch('panorama_ui._run_panorama') as analyze:
+    with patch('auto_pipeline_ui.launch_pipeline_worker') as worker, patch('panorama_ui._run_panorama') as analyze, \
+         patch('narration_ui.prepare_localized_narration',return_value=('Original Chinese guide translated for this fixture.',
+             {'localized_text':'Original Chinese guide translated for this fixture.'})):
         app.run(timeout=20)
         assert not app.exception
         assert app.radio(key='experience_mode').value=='普通照片'
         assert app.radio(key='experience_mode').options==['Ordinary photo','360° panorama']
         assert any(item.label=='Photo source' for item in app.radio)
-        assert any('Existing narration is Mandarin' in item.value for item in app.caption)
+        assert any('neural narration are prepared and cached in the selected language' in item.value for item in app.caption)
         app.radio(key='ui_language_picker').set_value('zh-CN').run(timeout=20)
         assert not app.exception
         assert app.radio(key='experience_mode').value=='普通照片'
@@ -123,5 +125,5 @@ def test_narration_only_page_uses_stable_structure_in_both_player_languages():
         assert result.count('id="narration-only-intro"')==1
         assert original in result
         assert ('Stop narration' if language=='en' else '停止朗读') in result
-        if language=='en':assert 'original Mandarin guide' in result and '全景导览' not in result
+        if language=='en':assert 'English panorama guide' in result and '全景导览' not in result
     set_language('zh-CN')

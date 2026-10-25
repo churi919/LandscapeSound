@@ -217,6 +217,44 @@ class UploadAppTests(unittest.TestCase):
             self.assertIn('main > p:not(#voice-status)',style)
             self.assertIn('{display:none!important}',style)
 
+    def test_english_overlay_changes_playback_and_export_without_changing_pipeline_result(self):
+        result=completed_result(self.raw,self.root)
+        original=json.loads(json.dumps(result));english='A water channel is visible between the rocks. The stream sound is simulated.'
+        localization={'language':'en','source_text':result['narration_text'],'localized_text':english,
+            'translation_provenance':{'method':'reviewed English fixture'},'available_voice_ids':['en-US-JennyNeural']}
+        storages=[];calls=[]
+        def storage(*args,**kwargs):
+            value=MemoryMediaFileStorage(*args,**kwargs);storages.append(value);return value
+        def render(sources,text,assets,duration):
+            calls.append(text);return '<style></style><main id="landscape-player"></main>'
+        with patch('streamlit.file_uploader',side_effect=lambda *a,**k:Uploaded(self.raw)), \
+             patch('streamlit.testing.v1.app_test.MemoryMediaFileStorage',side_effect=storage), \
+             patch.object(pipeline,'load_job',return_value={'status':'complete'}), \
+             patch.object(pipeline,'load_pipeline_result',return_value=result), \
+             patch.object(ui,'launch_pipeline_worker',side_effect=AssertionError('cached view spawned worker')), \
+             patch('panorama_ui._run_panorama',side_effect=AssertionError('visual analysis repeated')), \
+             patch('scene_audio_runtime.ensure_scene_audio',side_effect=AssertionError('soundscape repeated')), \
+             patch('narration_ui.prepare_localized_narration',return_value=(english,localization)) as overlay, \
+             patch('narration_ui.render_narration_controls',return_value={'language':'en','available_voice_ids':['en-US-JennyNeural']}) as controls, \
+             patch('browser_audio.render_audio',side_effect=render):
+            code="from ui_i18n import set_language\nset_language('en')\n"+self.script
+            app=AppTest.from_string(code,default_timeout=15).run()
+            app.checkbox(key='panorama_confirm_'+self.asset_id).check().run()
+            self.assertFalse(app.exception)
+            app.radio(key='panorama_view_'+self.asset_id).set_value('right').run()
+            self.assertFalse(app.exception)
+            self.assertEqual(calls,[english,english])
+            self.assertEqual(controls.call_args.args[0],english)
+            overlay.assert_called_with(result['narration_text'],self.root,self.asset_id)
+            download=app.get('download_button')[0].proto.url.rsplit('/',1)[-1]
+            saved=json.loads(storages[-1].get_file(download).content.decode('utf-8'))
+            self.assertEqual(saved['narration']['text'],result['narration_text'])
+            self.assertEqual(saved['narration']['playback_text'],english)
+            self.assertEqual(saved['narration']['localization'],localization)
+            self.assertEqual(saved['scene_audio_plan'],result['plan'])
+            self.assertEqual(saved['automatic_pipeline']['job_id'],self.job_id)
+            self.assertEqual(result,original)
+
     def test_sound_source_direction_keeps_the_full_player(self):
         result=completed_result(self.raw,self.root)
         def render(sources,*args):

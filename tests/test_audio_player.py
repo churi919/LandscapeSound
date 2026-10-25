@@ -80,5 +80,9 @@ class PlayerTests(unittest.TestCase):
                 payload=json.loads(re.search(r'<script>const CONFIG=(.*?);</script>',rendered,re.S).group(1))
                 self.assertEqual(payload['description'],text)
                 self.assertEqual(payload['description_language'],expected)
+                if language!=expected:
+                    self.assertFalse(payload['narration']['available'])
+                    self.assertIn('<button id="speak" disabled>',rendered)
+                    self.assertIn('English guide still preparing' if language=='en' else '中文导览仍在准备中',rendered)
 
 if __name__=='__main__':unittest.main()

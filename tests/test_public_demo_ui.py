@@ -1,5 +1,6 @@
 """The public demo can play offline without accepting arbitrary local paths."""
 import hashlib
+from copy import deepcopy
 import json
 from pathlib import Path
 import re
@@ -61,6 +62,12 @@ def bilingual_fixture(root):
         path = folder / scene[field]['file']; path.parent.mkdir()
         data = ('bilingual-fixture-' + field).encode(); path.write_bytes(data)
         scene[field]['sha256'] = hashlib.sha256(data).hexdigest()
+    scene['narrations']['zh-CN'] = scene['narration']
+    english = scene['narrations']['en']
+    english_path = folder / english['file']
+    english_data = b'bilingual-fixture-English-narration'
+    english_path.write_bytes(english_data)
+    english['sha256'] = hashlib.sha256(english_data).hexdigest()
     metadata = {'schema_version': 1, 'scenes': [scene]}
     (folder / 'metadata.json').write_text(json.dumps(metadata, ensure_ascii=False), encoding='utf-8')
     (folder / 'index.html').write_text(builder.render(metadata), encoding='utf-8')
@@ -84,9 +91,13 @@ def test_bilingual_page_has_complete_localized_content_and_honest_narration(tmp_
     assert '0.535' in english and '0.620' in english and '0.861' in english
     assert 'complete equirectangular panorama' in english
     assert 'Mossy stream and small cascades' in english
-    assert 'Chinese narration (original)' in english
-    assert 'English translation for reading only' in english
-    assert metadata['scenes'][0]['narration']['text'] in english
+    assert 'English narration · Jenny neural female voice' in english
+    assert metadata['scenes'][0]['narration']['text'] not in english
+    assert metadata['scenes'][0]['narrations']['en']['text'] in english
+    assert 'src="narration/monbachtal_riverbank.en.mp3"' in english
+    assert 'src="narration/monbachtal_riverbank.mp3"' not in english
+    assert 'src="narration/monbachtal_riverbank.mp3"' in chinese
+    assert 'src="narration/monbachtal_riverbank.en.mp3"' not in chinese
     assert 'href="../THIRD_PARTY_NOTICES.zh-CN.md"' in chinese
     assert 'href="../THIRD_PARTY_NOTICES.md"' in english
     # Language is resolved in the head before either template is mounted.
@@ -143,3 +154,78 @@ def test_english_streamlit_demo_has_english_status_and_no_new_outputs(tmp_path):
     assert app.caption[0].value.startswith('This page plays saved results')
     assert len(app.get('iframe')) == 1
     assert not (tmp_path / 'outputs').exists()
+
+
+def test_missing_english_narration_never_selects_chinese(tmp_path):
+    folder, metadata = bilingual_fixture(tmp_path)
+    metadata['scenes'][0]['narrations'].pop('en')
+    (folder / 'metadata.json').write_text(json.dumps(metadata), encoding='utf-8')
+    (folder / 'index.html').write_text(builder.render(metadata), encoding='utf-8')
+    document = build_public_demo_html(tmp_path, language='en')
+    english = re.search(r'<template id="demo-en">(.*?)</template>', document, re.S).group(1)
+    assert 'English narration is unavailable' in english
+    assert metadata['scenes'][0]['narration']['text'] not in english
+    assert english.count('<audio ') == 1  # Soundscape only; no narration fallback.
+
+
+def test_legacy_manifest_remains_chinese_only(tmp_path):
+    fixture(tmp_path)
+    assert 'data:audio/mpeg;base64,' in build_public_demo_html(tmp_path, language='zh-CN')
+    with pytest.raises(ValueError, match='English narration unavailable'):
+        build_public_demo_html(tmp_path, language='en')
+
+
+@pytest.mark.parametrize('change', ('path', 'locale', 'voice', 'text', 'text_language', 'audio'))
+def test_english_narration_binds_scene_locale_voice_text_and_audio(tmp_path, change):
+    folder, metadata = bilingual_fixture(tmp_path)
+    english = metadata['scenes'][0]['narrations']['en']
+    if change == 'path':
+        english['file'] = metadata['scenes'][0]['narration']['file']
+    elif change == 'locale':
+        english['language'] = 'zh-CN'
+    elif change == 'voice':
+        english['voice_id'] = 'zh-CN-XiaoxiaoNeural'
+    elif change == 'text':
+        english['text'] += ' Unexpected change.'
+    elif change == 'text_language':
+        english['text'] = metadata['scenes'][0]['narration']['text']
+        english['text_sha256'] = hashlib.sha256(english['text'].encode('utf-8')).hexdigest()
+    else:
+        (folder / english['file']).write_bytes(b'changed English audio')
+    (folder / 'metadata.json').write_text(json.dumps(metadata), encoding='utf-8')
+    with pytest.raises(ValueError):
+        build_public_demo_html(tmp_path, language='en')
+
+
+def test_wrong_language_reference_in_template_is_rejected(tmp_path):
+    folder, metadata = bilingual_fixture(tmp_path)
+    path = folder / 'index.html'
+    document = path.read_text(encoding='utf-8').replace(
+        metadata['scenes'][0]['narrations']['en']['file'], metadata['scenes'][0]['narration']['file'])
+    path.write_text(document, encoding='utf-8')
+    with pytest.raises(ValueError, match='page language'):
+        build_public_demo_html(tmp_path, language='en')
+
+
+def test_full_build_preserves_existing_english_record_and_audio(tmp_path, monkeypatch):
+    folder, metadata = bilingual_fixture(tmp_path)
+    scene = metadata['scenes'][0]
+    english = deepcopy(scene['narrations']['en'])
+    english_bytes = (folder / english['file']).read_bytes()
+    fresh_chinese_scene = deepcopy(scene); fresh_chinese_scene.pop('narrations')
+    evaluation_path = tmp_path / 'outputs/multiscene_automatic_evaluation/evaluation.json'
+    evaluation_path.parent.mkdir(parents=True)
+    evaluation_path.write_text(json.dumps({'rows':[{'id':scene['id']}],
+        'summary':{'between_scene_pairs':[]}}), encoding='utf-8')
+    manifest = tmp_path / 'samples/multiscene_auto_20261025/manifest.json'
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(json.dumps([{'id':scene['id']}]), encoding='utf-8')
+    monkeypatch.setattr(builder, 'ROOT', tmp_path)
+    monkeypatch.setattr(builder, 'OUTPUT', folder)
+    monkeypatch.setattr(builder, 'IDS', (scene['id'],))
+    monkeypatch.setattr(builder, 'codec_python', lambda: None)
+    monkeypatch.setattr(builder, 'public_item', lambda *args: fresh_chinese_scene)
+    builder.build()
+    rebuilt = json.loads((folder / 'metadata.json').read_text(encoding='utf-8'))
+    assert rebuilt['scenes'][0]['narrations']['en'] == english
+    assert (folder / english['file']).read_bytes() == english_bytes

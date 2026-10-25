@@ -21,15 +21,17 @@ TEXT='前方是一条岩石间流动的小溪。'
 
 def fixture(text=TEXT):
     voices=[]
+    english=not re.search(r'[\u3400-\u9fff]',text)
+    configured=[('en-US-JennyNeural','Natural English female · Jenny'),('en-US-GuyNeural','Natural English male · Guy')] if english else [('zh-CN-XiaoxiaoNeural','自然女声 · 晓晓'),('zh-CN-YunxiNeural','自然男声 · 云希')]
     # Temporary byte fixtures exercise encoding/provenance only, never auditory QA.
-    for voice_id,label in [('zh-CN-XiaoxiaoNeural','自然女声 · 晓晓'),('zh-CN-YunxiNeural','自然男声 · 云希')]:
+    for voice_id,label in configured:
         raw=('temporary-narration-fixture-'+voice_id).encode()
         voices.append({'voice_id':voice_id,'label':label,'provider':'Temporary test provider',
             'mime_type':'audio/mpeg','sha256':hashlib.sha256(raw).hexdigest(),
-            'audio_base64':base64.b64encode(raw).decode(),'neural':True,'duration_seconds':2.,
+            'audio_base64':base64.b64encode(raw).decode(),'neural':True,'duration_seconds':2.,'language':'en' if english else 'zh-CN',
             'credential_should_not_export':'test-fixture-secret'})
     return {'text_sha256':hashlib.sha256(text.encode()).hexdigest(),
-            'default_voice':'zh-CN-XiaoxiaoNeural','voices':voices,'available':True}
+            'default_voice':configured[0][0],'voices':voices,'available':True}
 
 
 class NarrationPlayerTests(unittest.TestCase):
@@ -65,9 +67,23 @@ class NarrationPlayerTests(unittest.TestCase):
         self.assertEqual(rendered.count('id="voice-status"'),1)
         self.assertIn('id="narration-volume"',rendered)
 
+    def test_payload_isolates_english_voice_and_never_embeds_a_chinese_fallback(self):
+        text='An English stream guide.';valid=fixture(text)
+        valid['voices'].extend(fixture()['voices'])
+        with self.mocked(valid):
+            result=_narration_payload(text,language='en')
+        self.assertEqual([entry['voice_id'] for entry in result['voices']],['en-US-JennyNeural','en-US-GuyNeural'])
+        self.assertEqual(result['default_voice'],'en-US-JennyNeural')
+        with self.mocked(fixture()):
+            for description in [TEXT,'','123…']:
+                with self.subTest(description=description):
+                    result=_narration_payload(description,language='en')
+                    self.assertFalse(result['available'])
+                    self.assertFalse(result['language_matches_text'])
+
     @unittest.skipUnless(shutil.which('node'),'Node runtime required for narration control checks')
     def test_neural_play_stop_selection_race_and_explicit_system_controls(self):
-        for language,text in [('zh-CN',TEXT),('en',TEXT),('zh-CN','Original English preview.'),('en','Original English preview.')]:
+        for language,text in [('zh-CN',TEXT),('en',TEXT),('zh-CN','Original English preview.'),('en','Original English preview.'),('en',''),('zh-CN','')]:
             with self.subTest(language=language,text=text),self.mocked(fixture(text)):
                 rendered=render_audio([],text,self.assets,language=language)
                 config=json.loads(re.search(r'const CONFIG=(.*?);</script>',rendered,re.S).group(1))
@@ -94,20 +110,36 @@ const sandbox={CONFIG,document:{getElementById:el,createElement:()=>new Element(
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync(process.argv[3],'utf8'),sandbox);
 const state=()=>sandbox.window.landscapeAudioDebug;const checks={};
 (async()=>{
- checks.default_neural_female=el('narration-voice').value==='zh-CN-XiaoxiaoNeural';
+ const english=CONFIG.language==='en',female=english?'en-US-JennyNeural':'zh-CN-XiaoxiaoNeural',male=english?'en-US-GuyNeural':'zh-CN-YunxiNeural';
+ checks.locale_voice_options_only=el('narration-voice').children.filter(option=>option.value!=='system').every(option=>(english?/^en-/:/^zh-/).test(option.value));
+ if(!CONFIG.description.trim()||CONFIG.description_language!==(english?'en':'zh-CN')){
+   checks.reading_is_disabled=el('speak').disabled&&el('narration-voice').disabled;
+   for(const forced of [female,male,'system',english?'zh-CN-XiaoxiaoNeural':'en-US-JennyNeural']){
+     el('narration-voice').value=forced;await vm.runInContext('speak()',sandbox);
+   }
+   checks.no_cross_language_neural_or_system_transport=FakeAudio.made.length===0&&systemSpeakCount===0&&!state().speechActive;
+   checks.preparing_message=el('status').textContent.includes(english?'English guide still preparing':'中文导览仍在准备中');
+   console.log(JSON.stringify({checks}));return;
+ }
+ checks.default_neural_female=el('narration-voice').value===female;
  await vm.runInContext('speak()',sandbox);let audio=FakeAudio.made.at(-1);
  checks.actual_neural_transport=audio.src.startsWith('data:audio/mpeg;base64,')&&!audio.paused&&state().speechActive&&systemSpeakCount===0;
  checks.localized_reading_status=el('status').textContent.includes(CONFIG.language==='en'?'Reading the original guide':'朗读');
- checks.localized_voice_options=el('narration-voice').children.some(option=>option.textContent.includes(CONFIG.language==='en'?'Chinese neural female':'自然女声'));
+ checks.localized_voice_options=el('narration-voice').children.some(option=>option.textContent.includes(english?'Natural English female':'自然女声'));
  vm.runInContext('stopAll()',sandbox);
  checks.stop_all_stops_narration=audio.paused&&!state().speechActive&&state().activeNodes===0;
- el('narration-voice').value='zh-CN-YunxiNeural';el('narration-voice').listeners.change();
+ el('narration-voice').value=male;el('narration-voice').listeners.change();
  await vm.runInContext('speak()',sandbox);
- checks.explicit_male_selection=state().last_narration.voice_id==='zh-CN-YunxiNeural';
+ checks.explicit_male_selection=state().last_narration.voice_id===male;
  vm.runInContext('download()',sandbox);const exported=JSON.parse(await capturedBlob.text());
  checks.export_source_exact=exported.narration.text_sha256===CONFIG.narration.text_sha256&&exported.narration.audio_sha256===CONFIG.narration.voices[1].sha256&&!JSON.stringify(exported).includes('audio_base64');
  audio=FakeAudio.made.at(-1);await vm.runInContext('play()',sandbox);
  checks.scene_play_stops_narration=audio.paused&&!state().speechActive;
+ const beforeWrong=FakeAudio.made.length;
+ CONFIG.narration.voices.push({...CONFIG.narration.voices[0],voice_id:english?'zh-CN-XiaoxiaoNeural':'en-US-JennyNeural',language:english?'zh-CN':'en'});
+ el('narration-voice').value=CONFIG.narration.voices.at(-1).voice_id;await vm.runInContext('speak()',sandbox);
+ checks.injected_opposite_voice_cannot_play=FakeAudio.made.length===beforeWrong&&systemSpeakCount===0;
+ CONFIG.narration.voices.pop();el('narration-voice').value=male;
  FakeAudio.defer=true;const pending=vm.runInContext('speak()',sandbox);audio=FakeAudio.made.at(-1);
  vm.runInContext('stopAll()',sandbox);audio.resolve();await pending;
  checks.stale_async_completion_cannot_resume=audio.paused&&!state().speechActive;
