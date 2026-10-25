@@ -200,8 +200,8 @@ EN_SCENES = {
 def render(data, language='zh-CN'):
     """Render both complete UI languages; a URL query selects the visible one.
 
-    Narration translations are display text only. The unchanged MP3 files are
-    the original Chinese neural narration in both interface languages.
+    Each language uses only its own narration record. Missing English audio
+    is shown explicitly and never replaced by the original Chinese recording.
     """
     esc = html.escape
     language = 'en' if language == 'en' else 'zh-CN'
@@ -216,12 +216,17 @@ def render(data, language='zh-CN'):
             title = translated['title']
             facts = translated['facts'] if english else item['visible_facts_zh']
             source = item['image']
+            narration = item.get('narrations', {}).get(lang)
+            if not english and narration is None:
+                narration = item['narration']  # Schema-1 Chinese compatibility.
             authors = ', '.join(source['authors']) if english else '、'.join(source['authors'])
             prompts = ''.join('<p><strong>'+esc(p['category'])+'</strong></p><pre lang="en">'+esc(p['prompt'])+'</pre>'
                               for p in item['sound_prompts'])
-            guide = ('<p>'+esc(translated['narration'])+'</p><p class="credit">'+tr(
-                '', 'English translation for reading only; the audio remains the original Chinese narration.')+'</p>') if english else ''
-            guide += '<p lang="zh-CN">'+esc(item['narration']['text'])+'</p>'
+            guide = '<p lang="'+lang+'">'+esc(narration['text'] if narration else translated['narration'])+'</p>'
+            if narration:
+                spoken = '<audio controls preload="metadata" lang="'+lang+'" aria-label="'+esc(title+tr('，中文神经导览', ', English neural narration'))+'" src="'+narration['file']+'"></audio>'
+            else:
+                spoken = '<p role="status" class="credit">'+tr('中文配音暂未就绪。', 'English narration is unavailable for this example. No Chinese audio is substituted.')+'</p>'
             cards.append(
                 '<article><img src="'+source['file']+'" alt="'+esc(title+tr('，完整等距柱状全景', ', complete equirectangular panorama'))+'">'
                 '<div class="content"><span class="tag">'+esc(translated['group'])+'</span><h2>'+esc(title)+'</h2>'
@@ -230,10 +235,9 @@ def render(data, language='zh-CN'):
                     'Scene-specific simulated soundscape · 28 s (lossy OGG listening copy)')+'</label>'
                 '<audio controls preload="metadata" aria-label="'+esc(title+tr('，模拟声景', ', simulated soundscape'))+'" src="'+item['audio']['file']+'"></audio>'
                 '<label>'+tr('本图自然中文导览 · 晓晓神经女声',
-                    'Chinese narration (original) · Xiaoxiao neural female voice')+'</label>'
-                '<audio controls preload="metadata" aria-label="'+esc(title+tr('，中文神经导览', ', original Chinese neural narration'))+'" src="'+item['narration']['file']+'"></audio>'
+                    'English narration · Jenny neural female voice')+'</label>'+spoken+
                 '<details><summary>'+tr('导览文字与声音提示词', 'Narration text and sound prompts')+'</summary>'
-                '<h3>'+tr('中文导览原文', 'Narration translation and original Chinese text')+'</h3>'+guide+
+                '<h3>'+tr('中文导览原文', 'English narration text')+'</h3>'+guide+
                 '<h3>'+tr('声音提示词（英文原文）', 'Sound prompts (original English)')+'</h3>'+prompts+'</details>'
                 '<p class="credit"><span>'+tr('全景来源：', 'Panorama: ')+'</span><a href="'+source['source_url']+'">'+esc(source['source_title'])+'</a> · '+esc(authors)+
                 ' · <a href="https://polyhaven.com/license">'+tr('摄影 CC0', 'Photography: CC0')+'</a> · Powered by Poly Haven</p></div></article>')
@@ -250,8 +254,8 @@ def render(data, language='zh-CN'):
             '<a data-language="en" lang="en" href="?lang=en"'+(' aria-current="true"' if english else '')+'>English</a></div></div>'
             '<header><div class="eyebrow">LANDSCAPESOUND · '+tr('公开试听', 'PUBLIC DEMO')+'</div><h1>'+
             tr('一幅风景，一段声景。', 'A landscape, a soundscape.')+'</h1><p>'+
-            tr('四张全新摄影全景，经主应用自动完成 GPT 理解、本机音效生成和中文导览。每张图都有独立音轨；这些声音是模拟，配音是神经合成，并非地点实录或真人录音。',
-               'Four new photographic panoramas processed automatically in the main app: GPT scene understanding, local sound generation and Chinese narration. Each image has its own audio. Soundscapes are simulated and narration is neural synthesis; neither is a recording of the pictured site or a human voice recording.')+'</p></header>'
+            tr('四张全新摄影全景，经主应用自动完成 GPT 理解、本机音效生成，并配有对应的中文和英文导览。每张图都有独立音轨；这些声音是模拟，配音是神经合成，并非地点实录或真人录音。',
+               'Four new photographic panoramas from the main app’s automatic GPT scene understanding and local sound generation, with corresponding Chinese and English narration. Each image has its own audio. Soundscapes are simulated and narration is neural synthesis; neither is a recording of the pictured site or a human voice recording.')+'</p></header>'
             '<aside class="note"><strong>'+tr('先从舒适的音量开始。', 'Start at a comfortable volume.')+'</strong><p>'+
             tr('建议戴耳机。播放任意一段声音会停止页面内其他声音；你可以随时暂停。页面不调用 GPT、模型或在线语音服务，所有试听文件都在此包内。',
                'Headphones are recommended. Playing any clip pauses the other clips on this page, and you can pause at any time. This page makes no GPT, model or online speech-service calls; every listening file is included in this package.')+'</p>'
@@ -264,8 +268,8 @@ def render(data, language='zh-CN'):
             '<tr><td>'+tr('岩壁瀑布', 'Rock-face waterfall')+'</td><td>0.638</td><td>0.619</td><td>0.463</td><td>'+tr('更像细溪，水势表达不足', 'Closer to a small stream; insufficient force')+'</td></tr></tbody></table></div><p>'+
             tr('两种流水的音频表征相似度为0.861；街道与三水景约0.200–0.263，差别较清楚。海边与流水也偏相近。所有四条新结果均保留；没有按分数换成旧素材。',
                'The two flowing-water clips have an audio-representation similarity of 0.861. Street-to-water similarities are approximately 0.200–0.263, showing clearer separation. The coast is also relatively close to flowing water. All four new results are retained; none was replaced with an older clip to improve scores.')+'</p>'
-            '<p class="credit">'+tr('内容指标基于统一28秒、约−23 LUFS的未压缩对照WAV。下方OGG是有损试听副本，未对OGG重新评分。四段配音约25.7–27.8秒，精确文字缓存已核验，未进行人耳自然度评分。',
-               'Content metrics use the uncompressed comparison WAVs, each 28 seconds and approximately −23 LUFS. The OGG files below are lossy listening copies and were not re-scored. The four narration clips last approximately 25.7–27.8 seconds; their exact-text caches were verified, but human naturalness was not scored.')+'</p></section>'
+            '<p class="credit">'+tr('内容指标基于统一28秒、约−23 LUFS的未压缩对照WAV。下方OGG是有损试听副本，未对OGG重新评分。原中文配音约25.7–27.8秒。中英文配音分别绑定各自文本和音频指纹，未进行人耳自然度评分。',
+               'Content metrics use the uncompressed comparison WAVs, each 28 seconds and approximately −23 LUFS. The OGG files below are lossy listening copies and were not re-scored. The original Chinese narration clips last approximately 25.7–27.8 seconds. Each language’s narration is bound to its own exact text and audio fingerprint; human naturalness was not scored.')+'</p></section>'
             '<div id="scenes" class="grid">'+''.join(cards)+'</div><footer><p>'+
             tr('图像方位、虚拟远近和动态声音均为模拟设定；静态图片不能确认现场响度、流速、通行或避障条件。',
                'Image directions, virtual distances and dynamic sounds are simulated settings. A still image cannot establish actual loudness, flow speed, access or obstacle-avoidance conditions.')+'</p><p>'
@@ -304,6 +308,25 @@ def render(data, language='zh-CN'):
 </script></body></html>'''
 
 
+def localized_narrations(scene):
+    """Validate locale-to-file/text binding while retaining schema-1 Chinese."""
+    records = scene.get('narrations', {})
+    if not isinstance(records, dict) or set(records) - {'zh-CN', 'en'}:
+        raise ValueError('Unsupported public narration locale')
+    for language, record in records.items():
+        suffix = '.en.mp3' if language == 'en' else '.mp3'
+        if not isinstance(record, dict) or record.get('file') != 'narration/'+scene['id']+suffix:
+            raise ValueError('Public narration file does not match its locale and scene')
+        if language == 'en' and (record.get('language') != 'en' or record.get('voice_id') != 'en-US-JennyNeural'):
+            raise ValueError('English public narration needs its declared English voice')
+        if language == 'en' and (re.search(r'[\u3400-\u9fff]', record.get('text', ''))
+                or record.get('source_text_sha256', scene['narration']['text_sha256']) != scene['narration']['text_sha256']):
+            raise ValueError('English narration must match its language and source guide')
+        if hashlib.sha256(record.get('text', '').encode('utf-8')).hexdigest() != record.get('text_sha256'):
+            raise ValueError('Public narration text checksum mismatch')
+        yield record
+
+
 def validate():
     data = read(OUTPUT/'metadata.json')
     assert_safe(data)
@@ -313,8 +336,7 @@ def validate():
         if any(re.search(pattern, text) for pattern in FORBIDDEN_TEXT):
             raise ValueError('Private text pattern detected in '+path.name)
     for scene in data['scenes']:
-        for kind in ('image', 'audio', 'narration'):
-            artifact = scene[kind]
+        for artifact in [scene[kind] for kind in ('image', 'audio', 'narration')] + list(localized_narrations(scene)):
             path = (OUTPUT/artifact['file']).resolve()
             if not path.is_relative_to(OUTPUT.resolve()) or digest(path) != artifact['sha256']:
                 raise ValueError('Invalid public artifact identity')
@@ -344,7 +366,48 @@ def build_html_only(language='zh-CN'):
     return validate()
 
 
+def add_english_narration():
+    """Explicit online synthesis of only the four public English guide texts."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from narration import ensure_narration
+    from narration_localization import store_reviewed_translation
+    data = read(OUTPUT/'metadata.json')
+    assert_safe(data)
+    rows = []
+    for scene in data['scenes']:
+        text = EN_SCENES[scene['id']]['narration']
+        store_reviewed_translation(source_text=scene['narration']['text'], translated_text=text,
+            language='en', provenance={'method':'Reviewed public-demo English translation',
+            'translated':True, 'scene_id':scene['id']}, root=ROOT)
+        print('Creating English narration: '+scene['id'], file=sys.stderr, flush=True)
+        result = ensure_narration(text, voices=['en-US-JennyNeural'], root=ROOT, language='en')
+        voice = next(item for item in result['voices'] if item['voice_id'] == 'en-US-JennyNeural')
+        source = Path(voice['file']).resolve()
+        expected_text = hashlib.sha256(text.encode('utf-8')).hexdigest()
+        if (not source.is_relative_to((ROOT/'assets/narration').resolve())
+                or voice['text'] != text or voice['text_sha256'] != expected_text
+                or digest(source) != voice['sha256']):
+            raise ValueError('English narration cache identity mismatch')
+        destination = OUTPUT/'narration'/(scene['id']+'.en.mp3')
+        shutil.copyfile(source, destination)
+        record = {'file':destination.relative_to(OUTPUT).as_posix(),
+            'sha256':digest(destination), 'text':text, 'text_sha256':expected_text,
+            'source_text_sha256':scene['narration']['text_sha256'],
+            'voice_id':voice['voice_id'], 'provider':voice['provider'], 'language':'en',
+            'duration_seconds':voice['duration_seconds'], 'neural':True,
+            'human_recording':False, 'synthesis_config':voice['synthesis_config'],
+            'text_source':'English translation of the corresponding public Chinese guide, stored in EN_SCENES.'}
+        scene['narrations'] = {'zh-CN':scene['narration'], 'en':record}
+        rows.append({key:record[key] for key in ('file','voice_id','duration_seconds','sha256','text_sha256')})
+    assert_safe(data)
+    write(OUTPUT/'metadata.json', data)
+    return {**build_html_only(), 'english_narrations':rows}
+
+
 def build(language='zh-CN'):
+    previous = read(OUTPUT/'metadata.json') if (OUTPUT/'metadata.json').is_file() else {}
+    previous_scenes = {scene['id']:scene for scene in previous.get('scenes', [])}
     evaluation = read(ROOT/'outputs/multiscene_automatic_evaluation/evaluation.json')
     assets = {item['id']:item for item in read(ROOT/'samples/multiscene_auto_20261025/manifest.json')}
     rows = {row['id']:row for row in evaluation['rows'] if row['id'] in IDS}
@@ -354,6 +417,15 @@ def build(language='zh-CN'):
         (OUTPUT/subfolder).mkdir(parents=True, exist_ok=True)
     python = codec_python()
     scenes = [public_item(assets[identifier], rows[identifier], python) for identifier in IDS]
+    for scene in scenes:
+        old = previous_scenes.get(scene['id'], {})
+        preserved = old.get('narrations', {}).get('en')
+        if preserved:
+            # Never silently drop or regenerate the separately produced English guide.
+            for record in localized_narrations(old):
+                if digest(OUTPUT/record['file']) != record['sha256']:
+                    raise ValueError('Existing localized narration has changed')
+            scene['narrations'] = {'zh-CN':scene['narration'], 'en':preserved}
     data = {'schema_version':1, 'title':'LandscapeSound four-scene public demo',
         'created_utc':datetime.now(timezone.utc).isoformat(),
         'scenes':scenes, 'pictured_site_recordings':False,
@@ -374,6 +446,7 @@ if __name__ == '__main__':
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument('--validate-only', action='store_true')
     modes.add_argument('--html-only', action='store_true', help='Rebuild the bilingual page without touching media or metadata.')
+    modes.add_argument('--english-narration', action='store_true', help='Explicitly send the four public English guides to the online neural TTS service and publish their MP3s.')
     parser.add_argument('--language', choices=('zh-CN', 'en'), default='zh-CN', help='Default language; URL lang overrides it in the static page.')
     args = parser.parse_args()
-    print(json.dumps(validate() if args.validate_only else build_html_only(args.language) if args.html_only else build(args.language), ensure_ascii=False))
+    print(json.dumps(validate() if args.validate_only else add_english_narration() if args.english_narration else build_html_only(args.language) if args.html_only else build(args.language), ensure_ascii=False))
