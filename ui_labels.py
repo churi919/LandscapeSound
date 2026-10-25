@@ -126,19 +126,16 @@ def ui_formatter():
 
 
 def keep_ui_widget(widget, *args, **kwargs):
-    """Restore a widget's existing value when its presentation language changes.
+    """Restore an existing widget value on every rerun using public Session State.
 
     Streamlit 1.50 includes labels and displayed options in widget identity, even
-    with an explicit key. Copying a value through public Session State before
-    rendering the translated widget keeps its data stable in this session.
+    with an explicit key. Defaults may also change after the first render.
+    Copying the current value before registration preserves both newly submitted
+    user input and earlier choices when either presentation or defaults change.
     """
     import streamlit as st
     key = kwargs['key']
-    language = get_language()
-    previous = st.session_state.setdefault('_ui_widget_languages', {})
-    changed = key in previous and previous[key] != language
-    previous[key] = language
-    if changed and key in st.session_state:
+    if key in st.session_state:
         st.session_state[key] = st.session_state[key]
         bound = inspect.signature(widget).bind(*args, **kwargs)
         parameters = inspect.signature(widget).parameters

@@ -168,7 +168,7 @@ python -m pip install -r requirements-test.txt
 python -m pytest tests -q
 ```
 
-In a clean source copy without models, historical outputs, original photographs, or the local runtime environments, the project tests produced **159 passed**. The tests do not require a GPT login or online narration. Node.js enables 3 browser-script checks; those 3 checks are explicitly skipped when Node is absent. `pytest.ini` separates project tests from tests in downloaded third-party code. Engineering checks cover cache identity, parsing, recovery, audio processing, and control logic; they do not establish segmentation accuracy, soundscape naturalness, or target-user outcomes.
+In a clean source copy without models, historical outputs, original photographs, or the local runtime environments, the project tests produced **160 passed**. The tests do not require a GPT login or online narration. Node.js enables 3 browser-script checks; those 3 checks are explicitly skipped when Node is absent. `pytest.ini` separates project tests from tests in downloaded third-party code. Engineering checks cover cache identity, parsing, recovery, audio processing, and control logic; they do not establish segmentation accuracy, soundscape naturalness, or target-user outcomes.
 
 ## Sources and licensing
 
