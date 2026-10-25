@@ -10,6 +10,30 @@ from auto_pipeline_ui import _show_steps
 from panorama_ui import _narration_only_page
 
 
+def test_fresh_homepage_keeps_default_panorama_upload_mode_on_repeated_reruns():
+    app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'))
+    app.query_params['lang']='en'
+    # Start with no prefilled session values, just as a new browser session does.
+    with patch('auto_pipeline_ui.launch_pipeline_worker') as worker, patch('panorama_ui._run_panorama') as analyze:
+        app.run(timeout=20)
+        assert not app.exception
+        uploader_id=app.get('file_uploader')[0].proto.id
+        for _ in range(3):
+            app.run(timeout=20)
+            assert not app.exception
+            assert not app.warning
+            assert app.radio(key='experience_mode').value=='360° 全景测试'
+            assert app.radio(key='panorama_source_kind').value=='上传我的全景图'
+            assert app.get('file_uploader')[0].proto.id==uploader_id
+        app.radio(key='ui_language_picker').set_value('zh-CN').run(timeout=20)
+        assert not app.exception
+        assert app.radio(key='experience_mode').value=='360° 全景测试'
+        assert app.radio(key='panorama_source_kind').value=='上传我的全景图'
+        assert app.get('file_uploader')[0].proto.id==uploader_id
+        worker.assert_not_called(); analyze.assert_not_called()
+    set_language('zh-CN')
+
+
 def test_language_switch_preserves_original_report_and_never_starts_generation():
     report={'title':'原始中文标题','input':{'sha256_rgb':'a'*64},
         'scene':{'description':'原始中文导览。','sources':[], 'fractions':{},
