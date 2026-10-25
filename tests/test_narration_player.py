@@ -67,16 +67,17 @@ class NarrationPlayerTests(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which('node'),'Node runtime required for narration control checks')
     def test_neural_play_stop_selection_race_and_explicit_system_controls(self):
-        with self.mocked(fixture()):
-            rendered=render_audio([],TEXT,self.assets)
-        config=json.loads(re.search(r'const CONFIG=(.*?);</script>',rendered,re.S).group(1))
-        with tempfile.TemporaryDirectory() as folder:
-            root=Path(folder);(root/'config.json').write_text(json.dumps(config),encoding='utf-8')
-            (root/'check.js').write_text(HARNESS,encoding='utf-8')
-            process=subprocess.run([shutil.which('node'),str(root/'check.js'),str(root/'config.json'),str(ROOT/'audio_player.js')],
-                capture_output=True,text=True,check=True)
-        result=json.loads(process.stdout)
-        self.assertTrue(all(result['checks'].values()),result)
+        for language,text in [('zh-CN',TEXT),('en',TEXT),('zh-CN','Original English preview.'),('en','Original English preview.')]:
+            with self.subTest(language=language,text=text),self.mocked(fixture(text)):
+                rendered=render_audio([],text,self.assets,language=language)
+                config=json.loads(re.search(r'const CONFIG=(.*?);</script>',rendered,re.S).group(1))
+                with tempfile.TemporaryDirectory() as folder:
+                    root=Path(folder);(root/'config.json').write_text(json.dumps(config),encoding='utf-8')
+                    (root/'check.js').write_text(HARNESS,encoding='utf-8')
+                    process=subprocess.run([shutil.which('node'),str(root/'check.js'),str(root/'config.json'),str(ROOT/'audio_player.js')],
+                        capture_output=True,text=True,check=True)
+                result=json.loads(process.stdout)
+                self.assertTrue(all(result['checks'].values()),result)
 
 
 HARNESS=r'''
@@ -87,8 +88,8 @@ const elements=new Map();const el=id=>{if(!elements.has(id))elements.set(id,new 
 for(const [id,value] of Object.entries({version:CONFIG.default_preset,mode:'depth',volume:'0.25','narration-volume':'0.8'}))el(id).value=value;
 class FakeAudio{static made=[];static defer=false;constructor(src){this.src=src;this.paused=true;this.currentTime=0;FakeAudio.made.push(this);}play(){this.paused=false;this.onplaying?.();return FakeAudio.defer?new Promise(resolve=>this.resolve=resolve):Promise.resolve();}pause(){this.paused=true;}}
 class Utterance{constructor(text){this.text=text;}}
-let systemSpeakCount=0,capturedBlob;
-const speechSynthesis={getVoices:()=>[{lang:'zh-CN',localService:true,name:'Temporary old system voice'}],addEventListener(){},cancel(){},speak(utterance){systemSpeakCount++;utterance.onstart?.();}};
+let systemSpeakCount=0,capturedBlob,capturedSystemLanguage,capturedSystemText;
+const speechSynthesis={getVoices:()=>[{lang:'en-US',localService:true,name:'Temporary English system voice'},{lang:'zh-CN',localService:true,name:'Temporary Chinese system voice'}],addEventListener(){},cancel(){},speak(utterance){systemSpeakCount++;capturedSystemLanguage=utterance.lang;capturedSystemText=utterance.text;utterance.onstart?.();}};
 const sandbox={CONFIG,document:{getElementById:el,createElement:()=>new Element(),querySelectorAll:()=>[]},window:{addEventListener(){},speechSynthesis},speechSynthesis,SpeechSynthesisUtterance:Utterance,Audio:FakeAudio,console,setTimeout,clearTimeout,Blob,URL:{createObjectURL:b=>{capturedBlob=b;return 'temporary';},revokeObjectURL(){}},atob:s=>Buffer.from(s,'base64').toString('binary')};
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync(process.argv[3],'utf8'),sandbox);
 const state=()=>sandbox.window.landscapeAudioDebug;const checks={};
@@ -96,6 +97,8 @@ const state=()=>sandbox.window.landscapeAudioDebug;const checks={};
  checks.default_neural_female=el('narration-voice').value==='zh-CN-XiaoxiaoNeural';
  await vm.runInContext('speak()',sandbox);let audio=FakeAudio.made.at(-1);
  checks.actual_neural_transport=audio.src.startsWith('data:audio/mpeg;base64,')&&!audio.paused&&state().speechActive&&systemSpeakCount===0;
+ checks.localized_reading_status=el('status').textContent.includes(CONFIG.language==='en'?'Reading the original guide':'朗读');
+ checks.localized_voice_options=el('narration-voice').children.some(option=>option.textContent.includes(CONFIG.language==='en'?'Chinese neural female':'自然女声'));
  vm.runInContext('stopAll()',sandbox);
  checks.stop_all_stops_narration=audio.paused&&!state().speechActive&&state().activeNodes===0;
  el('narration-voice').value='zh-CN-YunxiNeural';el('narration-voice').listeners.change();
@@ -110,9 +113,11 @@ const state=()=>sandbox.window.landscapeAudioDebug;const checks={};
  checks.stale_async_completion_cannot_resume=audio.paused&&!state().speechActive;
  FakeAudio.defer=false;CONFIG.narration.voices=[];const before=systemSpeakCount;
  await vm.runInContext('speak()',sandbox);
- checks.no_silent_system_fallback=systemSpeakCount===before&&!state().speechActive&&el('status').textContent.includes('尚未生成');
+ checks.no_silent_system_fallback=systemSpeakCount===before&&!state().speechActive&&el('status').textContent.includes(CONFIG.language==='en'?'not generated':'尚未生成');
  el('narration-voice').value='system';el('narration-voice').listeners.change();await vm.runInContext('speak()',sandbox);
  checks.explicit_system_selection=systemSpeakCount===before+1&&state().last_narration.voice_id==='system';
+ checks.system_voice_follows_original_text=capturedSystemLanguage===(CONFIG.description_language==='en'?'en-US':'zh-CN')&&capturedSystemText===CONFIG.description;
+ checks.system_option_language=el('narration-voice').children.at(-1).textContent.includes(CONFIG.description_language==='en'?(CONFIG.language==='en'?'English':'英文'):(CONFIG.language==='en'?'Chinese':'旧配音'));
  vm.runInContext('stopAll()',sandbox);
  console.log(JSON.stringify({checks}));
 })().catch(error=>{console.error(error);process.exit(1);});
